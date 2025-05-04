@@ -34,37 +34,66 @@ class ImportScreen extends StatelessWidget {
           padding: defaultPadding,
           child: BlocBuilder<ImportBloc, ImportState>(
             builder: (context, state) {
-              if (state is ImportLoadingState) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              String title = 'Файли до імпорту:';
-              if (state is ImportInitialState) {
-                title =
-                    'Файли відсутні. Щоб почати '
-                    'роботу, додайте Excel файл:';
-              }
-              final fileWidgets = <Widget>[];
-              if (state is ImportReadyState) {
-                fileWidgets.addAll(
-                  state.files.map((name) => _ImportedFile(name)),
-                );
-              }
-              return Center(
-                child: Column(
-                  spacing: defaultSpacing,
-                  children: [
-                    Text(title),
-                    ...fileWidgets,
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<ImportBloc>().add(ImportNewFileEvent());
-                      },
-                      child: const Text('Додати файл'),
+              switch (state) {
+                case ImportLoadingState _:
+                  return const Center(child: CircularProgressIndicator());
+                case ImportReadyState state:
+                  final fileWidgets =
+                      state.files.map((name) => _ImportedFile(name)).toList();
+                  return Center(
+                    child: Column(
+                      spacing: defaultSpacing,
+                      children: [
+                        const Text('Файли до імпорту:'),
+                        Card(
+                          child: Padding(
+                            padding: defaultPadding,
+                            child: SizedBox(
+                              width: 500,
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                separatorBuilder:
+                                    (_, _) => const Divider(height: 1),
+                                itemCount: fileWidgets.length,
+                                itemBuilder: (ctx, index) {
+                                  return fileWidgets[index];
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<ImportBloc>().add(
+                              ImportNewFileEvent(),
+                            );
+                          },
+                          child: const Text('Додати файл'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
+                  );
+                case _:
+                  return Center(
+                    child: Column(
+                      spacing: defaultSpacing,
+                      children: [
+                        const Text(
+                          'Файли відсутні. Щоб почати '
+                          'роботу, додайте Excel файл:',
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<ImportBloc>().add(
+                              ImportNewFileEvent(),
+                            );
+                          },
+                          child: const Text('Додати файл'),
+                        ),
+                      ],
+                    ),
+                  );
+              }
             },
           ),
         ),
@@ -107,39 +136,35 @@ class _ImportedFile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: SizedBox(
-        width: 500,
-        child: Padding(
-          padding: defaultPadding,
-          child: Row(
-            spacing: defaultSpacing,
-            children: [
-              Expanded(
-                child: Text(
-                  fileName,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+    return SizedBox(
+      width: 500,
+      child: Padding(
+        padding: smallPadding,
+        child: Row(
+          spacing: defaultSpacing,
+          children: [
+            Expanded(
+              child: Text(
+                fileName,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              _ImportedFileStatusIcon(
-                fileName.length > 10
-                    ? _ImportedFileStatus.ok
-                    : _ImportedFileStatus.warning,
+            ),
+            _ImportedFileStatusIcon(
+              fileName.length > 10
+                  ? _ImportedFileStatus.ok
+                  : _ImportedFileStatus.warning,
+            ),
+            OutlinedButton(
+              onPressed: () {
+                context.read<ImportBloc>().add(ImportRemoveFileEvent(fileName));
+              },
+              child: const Text(
+                'Прибрати',
+                style: TextStyle(color: Colors.red),
               ),
-              OutlinedButton(
-                onPressed: () {
-                  context.read<ImportBloc>().add(
-                    ImportRemoveFileEvent(fileName),
-                  );
-                },
-                child: const Text(
-                  'Прибрати',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

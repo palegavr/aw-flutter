@@ -42,6 +42,6 @@ class ImportBloc extends Bloc<ImportEvent, ImportState> {
         (state as ImportReadyState).files
             .where((f) => f != event.filePath)
             .toList();
-    emit(ImportReadyState(files: files));
+    emit(files.isEmpty ? ImportInitialState() : ImportReadyState(files: files));
   }
 }

@@ -8,4 +8,6 @@ final darkTheme = ThemeData(
 );
 
 const defaultSpacing = 16.0;
+const smallSpacing = 8.0;
 const defaultPadding = EdgeInsets.all(defaultSpacing);
+const smallPadding = EdgeInsets.all(smallSpacing);
