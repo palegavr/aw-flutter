@@ -1,5 +1,5 @@
-import 'package:aw_flutter/features/import_tables/presentation/bloc/import_bloc.dart';
-import 'package:aw_flutter/features/import_tables/presentation/view/distribute_screen.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/bloc/import_bloc.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_screen.dart';
 import 'package:aw_flutter/theme.dart';
 import 'package:aw_flutter/widgets.dart';
 import 'package:flutter/material.dart';
