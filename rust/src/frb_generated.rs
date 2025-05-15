@@ -37,7 +37,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1918914929;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1127398859;
 
 // Section: executor
 
@@ -45,37 +45,7 @@ flutter_rust_bridge::frb_generated_default_handler!();
 
 // Section: wire_funcs
 
-fn wire__crate__api__simple__greet_impl(
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "greet",
-            port: None,
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_name = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            transform_result_sse::<_, ()>((move || {
-                let output_ok = Result::<_, ()>::Ok(crate::api::simple::greet(api_name))?;
-                Ok(output_ok)
-            })())
-        },
-    )
-}
-fn wire__crate__api__simple__init_app_impl(
+fn wire__crate__api__excel_interface__init_app_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -101,7 +71,82 @@ fn wire__crate__api__simple__init_app_impl(
             move |context| {
                 transform_result_sse::<_, ()>((move || {
                     let output_ok = Result::<_, ()>::Ok({
-                        crate::api::simple::init_app();
+                        crate::api::excel_interface::init_app();
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__excel_interface__parse_excel_file_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "parse_excel_file",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_file_path = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::excel_interface::parse_excel_file(api_file_path),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__excel_interface__write_excel_file_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "write_excel_file",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_file_path = <String>::sse_decode(&mut deserializer);
+            let api_exported_tables =
+                <crate::excel::data::ExportedData>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::excel_interface::write_excel_file(
+                            api_file_path,
+                            api_exported_tables,
+                        );
                     })?;
                     Ok(output_ok)
                 })())
@@ -112,11 +157,185 @@ fn wire__crate__api__simple__init_app_impl(
 
 // Section: dart2rust
 
+impl SseDecode for std::collections::HashMap<String, Vec<crate::excel::data::InputRawRow>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner =
+            <Vec<(String, Vec<crate::excel::data::InputRawRow>)>>::sse_decode(deserializer);
+        return inner.into_iter().collect();
+    }
+}
+
 impl SseDecode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <Vec<u8>>::sse_decode(deserializer);
         return String::from_utf8(inner).unwrap();
+    }
+}
+
+impl SseDecode for bool {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u8().unwrap() != 0
+    }
+}
+
+impl SseDecode for crate::excel::data::ExportedData {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_year = <u32>::sse_decode(deserializer);
+        let mut var_typeName = <String>::sse_decode(deserializer);
+        let mut var_mainTable = <crate::excel::data::OutputMainTable>::sse_decode(deserializer);
+        let mut var_personalTables =
+            <Vec<crate::excel::data::OutputPersonalTables>>::sse_decode(deserializer);
+        return crate::excel::data::ExportedData {
+            year: var_year,
+            type_name: var_typeName,
+            main_table: var_mainTable,
+            personal_tables: var_personalTables,
+        };
+    }
+}
+
+impl SseDecode for f64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_f64::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for crate::excel::data::InputRawRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_learningForm = <String>::sse_decode(deserializer);
+        let mut var_speciality = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_course = <String>::sse_decode(deserializer);
+        let mut var_semester = <String>::sse_decode(deserializer);
+        let mut var_weeksCount = <String>::sse_decode(deserializer);
+        let mut var_studentsCount = <String>::sse_decode(deserializer);
+        let mut var_flowsCount = <String>::sse_decode(deserializer);
+        let mut var_groupsCount = <String>::sse_decode(deserializer);
+        let mut var_subgroupsCount = <String>::sse_decode(deserializer);
+        let mut var_lecturesPlannedCount = <String>::sse_decode(deserializer);
+        let mut var_lecturesTotalCount = <String>::sse_decode(deserializer);
+        let mut var_practicesPlannedCount = <String>::sse_decode(deserializer);
+        let mut var_practicesTotalCount = <String>::sse_decode(deserializer);
+        let mut var_labsPlannedCount = <String>::sse_decode(deserializer);
+        let mut var_labsTotalCount = <String>::sse_decode(deserializer);
+        let mut var_exams = <String>::sse_decode(deserializer);
+        let mut var_examConsults = <String>::sse_decode(deserializer);
+        let mut var_tests = <String>::sse_decode(deserializer);
+        let mut var_qualWorks = <String>::sse_decode(deserializer);
+        let mut var_certificationExams = <String>::sse_decode(deserializer);
+        let mut var_workingPractice = <String>::sse_decode(deserializer);
+        let mut var_teachingPractice = <String>::sse_decode(deserializer);
+        let mut var_consults = <String>::sse_decode(deserializer);
+        let mut var_individualWorks = <String>::sse_decode(deserializer);
+        let mut var_courseWorks = <String>::sse_decode(deserializer);
+        let mut var_postgraduateExams = <String>::sse_decode(deserializer);
+        let mut var_supervising = <String>::sse_decode(deserializer);
+        let mut var_internship = <String>::sse_decode(deserializer);
+        return crate::excel::data::InputRawRow {
+            learning_form: var_learningForm,
+            speciality: var_speciality,
+            name: var_name,
+            course: var_course,
+            semester: var_semester,
+            weeks_count: var_weeksCount,
+            students_count: var_studentsCount,
+            flows_count: var_flowsCount,
+            groups_count: var_groupsCount,
+            subgroups_count: var_subgroupsCount,
+            lectures_planned_count: var_lecturesPlannedCount,
+            lectures_total_count: var_lecturesTotalCount,
+            practices_planned_count: var_practicesPlannedCount,
+            practices_total_count: var_practicesTotalCount,
+            labs_planned_count: var_labsPlannedCount,
+            labs_total_count: var_labsTotalCount,
+            exams: var_exams,
+            exam_consults: var_examConsults,
+            tests: var_tests,
+            qual_works: var_qualWorks,
+            certification_exams: var_certificationExams,
+            working_practice: var_workingPractice,
+            teaching_practice: var_teachingPractice,
+            consults: var_consults,
+            individual_works: var_individualWorks,
+            course_works: var_courseWorks,
+            postgraduate_exams: var_postgraduateExams,
+            supervising: var_supervising,
+            internship: var_internship,
+        };
+    }
+}
+
+impl SseDecode for Vec<crate::excel::data::InputRawRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::excel::data::InputRawRow>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::excel::data::OutputMainWorkerRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::excel::data::OutputMainWorkerRow>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::excel::data::OutputPersonalSemesterRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::excel::data::OutputPersonalSemesterRow>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::excel::data::OutputPersonalTable> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::excel::data::OutputPersonalTable>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::excel::data::OutputPersonalTables> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::excel::data::OutputPersonalTables>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
     }
 }
 
@@ -129,6 +348,249 @@ impl SseDecode for Vec<u8> {
             ans_.push(<u8>::sse_decode(deserializer));
         }
         return ans_;
+    }
+}
+
+impl SseDecode for Vec<(String, Vec<crate::excel::data::InputRawRow>)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<(String, Vec<crate::excel::data::InputRawRow>)>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for crate::excel::data::OutputHoursRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_lectures = <f64>::sse_decode(deserializer);
+        let mut var_practices = <f64>::sse_decode(deserializer);
+        let mut var_labs = <f64>::sse_decode(deserializer);
+        let mut var_exams = <f64>::sse_decode(deserializer);
+        let mut var_examConsults = <f64>::sse_decode(deserializer);
+        let mut var_tests = <f64>::sse_decode(deserializer);
+        let mut var_qualWorks = <f64>::sse_decode(deserializer);
+        let mut var_workingPractice = <f64>::sse_decode(deserializer);
+        let mut var_teachingPractice = <f64>::sse_decode(deserializer);
+        let mut var_consults = <f64>::sse_decode(deserializer);
+        let mut var_individualWorks = <f64>::sse_decode(deserializer);
+        let mut var_courseWorks = <f64>::sse_decode(deserializer);
+        let mut var_supervising = <f64>::sse_decode(deserializer);
+        let mut var_total = <f64>::sse_decode(deserializer);
+        return crate::excel::data::OutputHoursRow {
+            lectures: var_lectures,
+            practices: var_practices,
+            labs: var_labs,
+            exams: var_exams,
+            exam_consults: var_examConsults,
+            tests: var_tests,
+            qual_works: var_qualWorks,
+            working_practice: var_workingPractice,
+            teaching_practice: var_teachingPractice,
+            consults: var_consults,
+            individual_works: var_individualWorks,
+            course_works: var_courseWorks,
+            supervising: var_supervising,
+            total: var_total,
+        };
+    }
+}
+
+impl SseDecode for crate::excel::data::OutputMainRateAndHours {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_rate = <f64>::sse_decode(deserializer);
+        let mut var_semester1 = <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_semester2 = <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_year = <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        return crate::excel::data::OutputMainRateAndHours {
+            rate: var_rate,
+            semester_1: var_semester1,
+            semester_2: var_semester2,
+            year: var_year,
+        };
+    }
+}
+
+impl SseDecode for crate::excel::data::OutputMainTable {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_heads =
+            <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_decode(deserializer);
+        let mut var_headsTotal =
+            <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        let mut var_professors =
+            <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_decode(deserializer);
+        let mut var_professorsTotal =
+            <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        let mut var_associateProfessors =
+            <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_decode(deserializer);
+        let mut var_associateProfessorsTotal =
+            <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        let mut var_lecturers =
+            <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_decode(deserializer);
+        let mut var_lecturersTotal =
+            <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        let mut var_assistants =
+            <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_decode(deserializer);
+        let mut var_assistantsTotal =
+            <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        let mut var_partTimers =
+            <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_decode(deserializer);
+        let mut var_partTimersTotal =
+            <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        let mut var_total = <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        return crate::excel::data::OutputMainTable {
+            heads: var_heads,
+            heads_total: var_headsTotal,
+            professors: var_professors,
+            professors_total: var_professorsTotal,
+            associate_professors: var_associateProfessors,
+            associate_professors_total: var_associateProfessorsTotal,
+            lecturers: var_lecturers,
+            lecturers_total: var_lecturersTotal,
+            assistants: var_assistants,
+            assistants_total: var_assistantsTotal,
+            part_timers: var_partTimers,
+            part_timers_total: var_partTimersTotal,
+            total: var_total,
+        };
+    }
+}
+
+impl SseDecode for crate::excel::data::OutputMainWorkerRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_firstName = <String>::sse_decode(deserializer);
+        let mut var_middleName = <String>::sse_decode(deserializer);
+        let mut var_lastName = <String>::sse_decode(deserializer);
+        let mut var_rank = <String>::sse_decode(deserializer);
+        let mut var_rateAndHours =
+            <crate::excel::data::OutputMainRateAndHours>::sse_decode(deserializer);
+        return crate::excel::data::OutputMainWorkerRow {
+            first_name: var_firstName,
+            middle_name: var_middleName,
+            last_name: var_lastName,
+            rank: var_rank,
+            rate_and_hours: var_rateAndHours,
+        };
+    }
+}
+
+impl SseDecode for crate::excel::data::OutputPersonalSemesterRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_learningForm = <String>::sse_decode(deserializer);
+        let mut var_speciality = <String>::sse_decode(deserializer);
+        let mut var_group = <String>::sse_decode(deserializer);
+        let mut var_course = <String>::sse_decode(deserializer);
+        let mut var_studentsCount = <u32>::sse_decode(deserializer);
+        let mut var_hours = <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_mergeLecturesWithNext = <bool>::sse_decode(deserializer);
+        return crate::excel::data::OutputPersonalSemesterRow {
+            name: var_name,
+            learning_form: var_learningForm,
+            speciality: var_speciality,
+            group: var_group,
+            course: var_course,
+            students_count: var_studentsCount,
+            hours: var_hours,
+            merge_lectures_with_next: var_mergeLecturesWithNext,
+        };
+    }
+}
+
+impl SseDecode for crate::excel::data::OutputPersonalTable {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <u32>::sse_decode(deserializer);
+        let mut var_firstName = <String>::sse_decode(deserializer);
+        let mut var_middleName = <String>::sse_decode(deserializer);
+        let mut var_lastName = <String>::sse_decode(deserializer);
+        let mut var_commentSemester1 = <String>::sse_decode(deserializer);
+        let mut var_commentSemester2 = <String>::sse_decode(deserializer);
+        let mut var_rank = <String>::sse_decode(deserializer);
+        let mut var_semester1 =
+            <Vec<crate::excel::data::OutputPersonalSemesterRow>>::sse_decode(deserializer);
+        let mut var_semester1Rate = <f64>::sse_decode(deserializer);
+        let mut var_semester1TotalDay =
+            <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_semester1TotalEvening =
+            <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_semester1Total = <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_semester2 =
+            <Vec<crate::excel::data::OutputPersonalSemesterRow>>::sse_decode(deserializer);
+        let mut var_semester2Rate = <f64>::sse_decode(deserializer);
+        let mut var_semester2TotalDay =
+            <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_semester2TotalEvening =
+            <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_semester2Total = <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        let mut var_yearTotal = <crate::excel::data::OutputHoursRow>::sse_decode(deserializer);
+        return crate::excel::data::OutputPersonalTable {
+            id: var_id,
+            first_name: var_firstName,
+            middle_name: var_middleName,
+            last_name: var_lastName,
+            comment_semester_1: var_commentSemester1,
+            comment_semester_2: var_commentSemester2,
+            rank: var_rank,
+            semester_1: var_semester1,
+            semester_1_rate: var_semester1Rate,
+            semester_1_total_day: var_semester1TotalDay,
+            semester_1_total_evening: var_semester1TotalEvening,
+            semester_1_total: var_semester1Total,
+            semester_2: var_semester2,
+            semester_2_rate: var_semester2Rate,
+            semester_2_total_day: var_semester2TotalDay,
+            semester_2_total_evening: var_semester2TotalEvening,
+            semester_2_total: var_semester2Total,
+            year_total: var_yearTotal,
+        };
+    }
+}
+
+impl SseDecode for crate::excel::data::OutputPersonalTables {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_workerLastName = <String>::sse_decode(deserializer);
+        let mut var_tables =
+            <Vec<crate::excel::data::OutputPersonalTable>>::sse_decode(deserializer);
+        return crate::excel::data::OutputPersonalTables {
+            worker_last_name: var_workerLastName,
+            tables: var_tables,
+        };
+    }
+}
+
+impl SseDecode for crate::excel::data::ParsedExcelFile {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_data =
+            <std::collections::HashMap<String, Vec<crate::excel::data::InputRawRow>>>::sse_decode(
+                deserializer,
+            );
+        return crate::excel::data::ParsedExcelFile { data: var_data };
+    }
+}
+
+impl SseDecode for (String, Vec<crate::excel::data::InputRawRow>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <Vec<crate::excel::data::InputRawRow>>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u32::<NativeEndian>().unwrap()
     }
 }
 
@@ -151,13 +613,6 @@ impl SseDecode for i32 {
     }
 }
 
-impl SseDecode for bool {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        deserializer.cursor.read_u8().unwrap() != 0
-    }
-}
-
 fn pde_ffi_dispatcher_primary_impl(
     func_id: i32,
     port: flutter_rust_bridge::for_generated::MessagePort,
@@ -167,7 +622,19 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        2 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        1 => wire__crate__api__excel_interface__init_app_impl(port, ptr, rust_vec_len, data_len),
+        2 => wire__crate__api__excel_interface__parse_excel_file_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        3 => wire__crate__api__excel_interface__write_excel_file_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
         _ => unreachable!(),
     }
 }
@@ -180,17 +647,424 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        1 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
 
 // Section: rust2dart
 
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::ExportedData {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.year.into_into_dart().into_dart(),
+            self.type_name.into_into_dart().into_dart(),
+            self.main_table.into_into_dart().into_dart(),
+            self.personal_tables.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::ExportedData
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::ExportedData>
+    for crate::excel::data::ExportedData
+{
+    fn into_into_dart(self) -> crate::excel::data::ExportedData {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::InputRawRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.learning_form.into_into_dart().into_dart(),
+            self.speciality.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.course.into_into_dart().into_dart(),
+            self.semester.into_into_dart().into_dart(),
+            self.weeks_count.into_into_dart().into_dart(),
+            self.students_count.into_into_dart().into_dart(),
+            self.flows_count.into_into_dart().into_dart(),
+            self.groups_count.into_into_dart().into_dart(),
+            self.subgroups_count.into_into_dart().into_dart(),
+            self.lectures_planned_count.into_into_dart().into_dart(),
+            self.lectures_total_count.into_into_dart().into_dart(),
+            self.practices_planned_count.into_into_dart().into_dart(),
+            self.practices_total_count.into_into_dart().into_dart(),
+            self.labs_planned_count.into_into_dart().into_dart(),
+            self.labs_total_count.into_into_dart().into_dart(),
+            self.exams.into_into_dart().into_dart(),
+            self.exam_consults.into_into_dart().into_dart(),
+            self.tests.into_into_dart().into_dart(),
+            self.qual_works.into_into_dart().into_dart(),
+            self.certification_exams.into_into_dart().into_dart(),
+            self.working_practice.into_into_dart().into_dart(),
+            self.teaching_practice.into_into_dart().into_dart(),
+            self.consults.into_into_dart().into_dart(),
+            self.individual_works.into_into_dart().into_dart(),
+            self.course_works.into_into_dart().into_dart(),
+            self.postgraduate_exams.into_into_dart().into_dart(),
+            self.supervising.into_into_dart().into_dart(),
+            self.internship.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::InputRawRow
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::InputRawRow>
+    for crate::excel::data::InputRawRow
+{
+    fn into_into_dart(self) -> crate::excel::data::InputRawRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::OutputHoursRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.lectures.into_into_dart().into_dart(),
+            self.practices.into_into_dart().into_dart(),
+            self.labs.into_into_dart().into_dart(),
+            self.exams.into_into_dart().into_dart(),
+            self.exam_consults.into_into_dart().into_dart(),
+            self.tests.into_into_dart().into_dart(),
+            self.qual_works.into_into_dart().into_dart(),
+            self.working_practice.into_into_dart().into_dart(),
+            self.teaching_practice.into_into_dart().into_dart(),
+            self.consults.into_into_dart().into_dart(),
+            self.individual_works.into_into_dart().into_dart(),
+            self.course_works.into_into_dart().into_dart(),
+            self.supervising.into_into_dart().into_dart(),
+            self.total.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::OutputHoursRow
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::OutputHoursRow>
+    for crate::excel::data::OutputHoursRow
+{
+    fn into_into_dart(self) -> crate::excel::data::OutputHoursRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::OutputMainRateAndHours {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.rate.into_into_dart().into_dart(),
+            self.semester_1.into_into_dart().into_dart(),
+            self.semester_2.into_into_dart().into_dart(),
+            self.year.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::OutputMainRateAndHours
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::OutputMainRateAndHours>
+    for crate::excel::data::OutputMainRateAndHours
+{
+    fn into_into_dart(self) -> crate::excel::data::OutputMainRateAndHours {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::OutputMainTable {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.heads.into_into_dart().into_dart(),
+            self.heads_total.into_into_dart().into_dart(),
+            self.professors.into_into_dart().into_dart(),
+            self.professors_total.into_into_dart().into_dart(),
+            self.associate_professors.into_into_dart().into_dart(),
+            self.associate_professors_total.into_into_dart().into_dart(),
+            self.lecturers.into_into_dart().into_dart(),
+            self.lecturers_total.into_into_dart().into_dart(),
+            self.assistants.into_into_dart().into_dart(),
+            self.assistants_total.into_into_dart().into_dart(),
+            self.part_timers.into_into_dart().into_dart(),
+            self.part_timers_total.into_into_dart().into_dart(),
+            self.total.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::OutputMainTable
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::OutputMainTable>
+    for crate::excel::data::OutputMainTable
+{
+    fn into_into_dart(self) -> crate::excel::data::OutputMainTable {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::OutputMainWorkerRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.first_name.into_into_dart().into_dart(),
+            self.middle_name.into_into_dart().into_dart(),
+            self.last_name.into_into_dart().into_dart(),
+            self.rank.into_into_dart().into_dart(),
+            self.rate_and_hours.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::OutputMainWorkerRow
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::OutputMainWorkerRow>
+    for crate::excel::data::OutputMainWorkerRow
+{
+    fn into_into_dart(self) -> crate::excel::data::OutputMainWorkerRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::OutputPersonalSemesterRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.learning_form.into_into_dart().into_dart(),
+            self.speciality.into_into_dart().into_dart(),
+            self.group.into_into_dart().into_dart(),
+            self.course.into_into_dart().into_dart(),
+            self.students_count.into_into_dart().into_dart(),
+            self.hours.into_into_dart().into_dart(),
+            self.merge_lectures_with_next.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::OutputPersonalSemesterRow
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::OutputPersonalSemesterRow>
+    for crate::excel::data::OutputPersonalSemesterRow
+{
+    fn into_into_dart(self) -> crate::excel::data::OutputPersonalSemesterRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::OutputPersonalTable {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.first_name.into_into_dart().into_dart(),
+            self.middle_name.into_into_dart().into_dart(),
+            self.last_name.into_into_dart().into_dart(),
+            self.comment_semester_1.into_into_dart().into_dart(),
+            self.comment_semester_2.into_into_dart().into_dart(),
+            self.rank.into_into_dart().into_dart(),
+            self.semester_1.into_into_dart().into_dart(),
+            self.semester_1_rate.into_into_dart().into_dart(),
+            self.semester_1_total_day.into_into_dart().into_dart(),
+            self.semester_1_total_evening.into_into_dart().into_dart(),
+            self.semester_1_total.into_into_dart().into_dart(),
+            self.semester_2.into_into_dart().into_dart(),
+            self.semester_2_rate.into_into_dart().into_dart(),
+            self.semester_2_total_day.into_into_dart().into_dart(),
+            self.semester_2_total_evening.into_into_dart().into_dart(),
+            self.semester_2_total.into_into_dart().into_dart(),
+            self.year_total.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::OutputPersonalTable
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::OutputPersonalTable>
+    for crate::excel::data::OutputPersonalTable
+{
+    fn into_into_dart(self) -> crate::excel::data::OutputPersonalTable {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::OutputPersonalTables {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.worker_last_name.into_into_dart().into_dart(),
+            self.tables.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::OutputPersonalTables
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::OutputPersonalTables>
+    for crate::excel::data::OutputPersonalTables
+{
+    fn into_into_dart(self) -> crate::excel::data::OutputPersonalTables {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::excel::data::ParsedExcelFile {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [self.data.into_into_dart().into_dart()].into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::excel::data::ParsedExcelFile
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::excel::data::ParsedExcelFile>
+    for crate::excel::data::ParsedExcelFile
+{
+    fn into_into_dart(self) -> crate::excel::data::ParsedExcelFile {
+        self
+    }
+}
+
+impl SseEncode for std::collections::HashMap<String, Vec<crate::excel::data::InputRawRow>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<(String, Vec<crate::excel::data::InputRawRow>)>>::sse_encode(
+            self.into_iter().collect(),
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <Vec<u8>>::sse_encode(self.into_bytes(), serializer);
+    }
+}
+
+impl SseEncode for bool {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u8(self as _).unwrap();
+    }
+}
+
+impl SseEncode for crate::excel::data::ExportedData {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u32>::sse_encode(self.year, serializer);
+        <String>::sse_encode(self.type_name, serializer);
+        <crate::excel::data::OutputMainTable>::sse_encode(self.main_table, serializer);
+        <Vec<crate::excel::data::OutputPersonalTables>>::sse_encode(
+            self.personal_tables,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for f64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_f64::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for crate::excel::data::InputRawRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.learning_form, serializer);
+        <String>::sse_encode(self.speciality, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.course, serializer);
+        <String>::sse_encode(self.semester, serializer);
+        <String>::sse_encode(self.weeks_count, serializer);
+        <String>::sse_encode(self.students_count, serializer);
+        <String>::sse_encode(self.flows_count, serializer);
+        <String>::sse_encode(self.groups_count, serializer);
+        <String>::sse_encode(self.subgroups_count, serializer);
+        <String>::sse_encode(self.lectures_planned_count, serializer);
+        <String>::sse_encode(self.lectures_total_count, serializer);
+        <String>::sse_encode(self.practices_planned_count, serializer);
+        <String>::sse_encode(self.practices_total_count, serializer);
+        <String>::sse_encode(self.labs_planned_count, serializer);
+        <String>::sse_encode(self.labs_total_count, serializer);
+        <String>::sse_encode(self.exams, serializer);
+        <String>::sse_encode(self.exam_consults, serializer);
+        <String>::sse_encode(self.tests, serializer);
+        <String>::sse_encode(self.qual_works, serializer);
+        <String>::sse_encode(self.certification_exams, serializer);
+        <String>::sse_encode(self.working_practice, serializer);
+        <String>::sse_encode(self.teaching_practice, serializer);
+        <String>::sse_encode(self.consults, serializer);
+        <String>::sse_encode(self.individual_works, serializer);
+        <String>::sse_encode(self.course_works, serializer);
+        <String>::sse_encode(self.postgraduate_exams, serializer);
+        <String>::sse_encode(self.supervising, serializer);
+        <String>::sse_encode(self.internship, serializer);
+    }
+}
+
+impl SseEncode for Vec<crate::excel::data::InputRawRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::excel::data::InputRawRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::excel::data::OutputMainWorkerRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::excel::data::OutputMainWorkerRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::excel::data::OutputPersonalSemesterRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::excel::data::OutputPersonalSemesterRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::excel::data::OutputPersonalTable> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::excel::data::OutputPersonalTable>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::excel::data::OutputPersonalTables> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::excel::data::OutputPersonalTables>::sse_encode(item, serializer);
+        }
     }
 }
 
@@ -201,6 +1075,161 @@ impl SseEncode for Vec<u8> {
         for item in self {
             <u8>::sse_encode(item, serializer);
         }
+    }
+}
+
+impl SseEncode for Vec<(String, Vec<crate::excel::data::InputRawRow>)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <(String, Vec<crate::excel::data::InputRawRow>)>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for crate::excel::data::OutputHoursRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <f64>::sse_encode(self.lectures, serializer);
+        <f64>::sse_encode(self.practices, serializer);
+        <f64>::sse_encode(self.labs, serializer);
+        <f64>::sse_encode(self.exams, serializer);
+        <f64>::sse_encode(self.exam_consults, serializer);
+        <f64>::sse_encode(self.tests, serializer);
+        <f64>::sse_encode(self.qual_works, serializer);
+        <f64>::sse_encode(self.working_practice, serializer);
+        <f64>::sse_encode(self.teaching_practice, serializer);
+        <f64>::sse_encode(self.consults, serializer);
+        <f64>::sse_encode(self.individual_works, serializer);
+        <f64>::sse_encode(self.course_works, serializer);
+        <f64>::sse_encode(self.supervising, serializer);
+        <f64>::sse_encode(self.total, serializer);
+    }
+}
+
+impl SseEncode for crate::excel::data::OutputMainRateAndHours {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <f64>::sse_encode(self.rate, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_1, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_2, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.year, serializer);
+    }
+}
+
+impl SseEncode for crate::excel::data::OutputMainTable {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_encode(self.heads, serializer);
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(self.heads_total, serializer);
+        <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_encode(self.professors, serializer);
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(self.professors_total, serializer);
+        <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_encode(
+            self.associate_professors,
+            serializer,
+        );
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(
+            self.associate_professors_total,
+            serializer,
+        );
+        <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_encode(self.lecturers, serializer);
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(self.lecturers_total, serializer);
+        <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_encode(self.assistants, serializer);
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(self.assistants_total, serializer);
+        <Vec<crate::excel::data::OutputMainWorkerRow>>::sse_encode(self.part_timers, serializer);
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(
+            self.part_timers_total,
+            serializer,
+        );
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(self.total, serializer);
+    }
+}
+
+impl SseEncode for crate::excel::data::OutputMainWorkerRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.first_name, serializer);
+        <String>::sse_encode(self.middle_name, serializer);
+        <String>::sse_encode(self.last_name, serializer);
+        <String>::sse_encode(self.rank, serializer);
+        <crate::excel::data::OutputMainRateAndHours>::sse_encode(self.rate_and_hours, serializer);
+    }
+}
+
+impl SseEncode for crate::excel::data::OutputPersonalSemesterRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.learning_form, serializer);
+        <String>::sse_encode(self.speciality, serializer);
+        <String>::sse_encode(self.group, serializer);
+        <String>::sse_encode(self.course, serializer);
+        <u32>::sse_encode(self.students_count, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.hours, serializer);
+        <bool>::sse_encode(self.merge_lectures_with_next, serializer);
+    }
+}
+
+impl SseEncode for crate::excel::data::OutputPersonalTable {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u32>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.first_name, serializer);
+        <String>::sse_encode(self.middle_name, serializer);
+        <String>::sse_encode(self.last_name, serializer);
+        <String>::sse_encode(self.comment_semester_1, serializer);
+        <String>::sse_encode(self.comment_semester_2, serializer);
+        <String>::sse_encode(self.rank, serializer);
+        <Vec<crate::excel::data::OutputPersonalSemesterRow>>::sse_encode(
+            self.semester_1,
+            serializer,
+        );
+        <f64>::sse_encode(self.semester_1_rate, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_1_total_day, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_1_total_evening, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_1_total, serializer);
+        <Vec<crate::excel::data::OutputPersonalSemesterRow>>::sse_encode(
+            self.semester_2,
+            serializer,
+        );
+        <f64>::sse_encode(self.semester_2_rate, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_2_total_day, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_2_total_evening, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.semester_2_total, serializer);
+        <crate::excel::data::OutputHoursRow>::sse_encode(self.year_total, serializer);
+    }
+}
+
+impl SseEncode for crate::excel::data::OutputPersonalTables {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.worker_last_name, serializer);
+        <Vec<crate::excel::data::OutputPersonalTable>>::sse_encode(self.tables, serializer);
+    }
+}
+
+impl SseEncode for crate::excel::data::ParsedExcelFile {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <std::collections::HashMap<String, Vec<crate::excel::data::InputRawRow>>>::sse_encode(
+            self.data, serializer,
+        );
+    }
+}
+
+impl SseEncode for (String, Vec<crate::excel::data::InputRawRow>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <Vec<crate::excel::data::InputRawRow>>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
     }
 }
 
@@ -220,13 +1249,6 @@ impl SseEncode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
-    }
-}
-
-impl SseEncode for bool {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        serializer.cursor.write_u8(self as _).unwrap();
     }
 }
 

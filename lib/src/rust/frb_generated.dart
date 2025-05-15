@@ -3,9 +3,10 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
-import 'package:aw_flutter/src/rust/api/simple.dart';
+import 'package:aw_flutter/src/rust/api/excel_interface.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:aw_flutter/src/rust/excel/data.dart';
 import 'package:aw_flutter/src/rust/frb_generated.dart';
 import 'package:aw_flutter/src/rust/frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
@@ -53,7 +54,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
   @override
   Future<void> executeRustInitializers() async {
-    await api.crateApiSimpleInitApp();
+    await api.crateApiExcelInterfaceInitApp();
   }
 
   @override
@@ -64,7 +65,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -1918914929;
+  int get rustContentHash => 1127398859;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -75,9 +76,16 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
-  String crateApiSimpleGreet({required String name});
+  Future<void> crateApiExcelInterfaceInitApp();
 
-  Future<void> crateApiSimpleInitApp();
+  Future<ParsedExcelFile> crateApiExcelInterfaceParseExcelFile({
+    required String filePath,
+  });
+
+  Future<void> crateApiExcelInterfaceWriteExcelFile({
+    required String filePath,
+    required ExportedData exportedTables,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -89,34 +97,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  String crateApiSimpleGreet({required String name}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
+  Future<void> crateApiExcelInterfaceInitApp() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
+          decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
         ),
-        constMeta: kCrateApiSimpleGreetConstMeta,
-        argValues: [name],
+        constMeta: kCrateApiExcelInterfaceInitAppConstMeta,
+        argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiSimpleGreetConstMeta =>
-      const TaskConstMeta(debugName: 'greet', argNames: ['name']);
+  TaskConstMeta get kCrateApiExcelInterfaceInitAppConstMeta =>
+      const TaskConstMeta(debugName: 'init_app', argNames: []);
 
   @override
-  Future<void> crateApiSimpleInitApp() {
+  Future<ParsedExcelFile> crateApiExcelInterfaceParseExcelFile({
+    required String filePath,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(filePath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -125,18 +140,68 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
+          decodeSuccessData: sse_decode_parsed_excel_file,
           decodeErrorData: null,
         ),
-        constMeta: kCrateApiSimpleInitAppConstMeta,
-        argValues: [],
+        constMeta: kCrateApiExcelInterfaceParseExcelFileConstMeta,
+        argValues: [filePath],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiSimpleInitAppConstMeta =>
-      const TaskConstMeta(debugName: 'init_app', argNames: []);
+  TaskConstMeta get kCrateApiExcelInterfaceParseExcelFileConstMeta =>
+      const TaskConstMeta(
+        debugName: 'parse_excel_file',
+        argNames: ['filePath'],
+      );
+
+  @override
+  Future<void> crateApiExcelInterfaceWriteExcelFile({
+    required String filePath,
+    required ExportedData exportedTables,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(filePath, serializer);
+          sse_encode_box_autoadd_exported_data(exportedTables, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiExcelInterfaceWriteExcelFileConstMeta,
+        argValues: [filePath, exportedTables],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiExcelInterfaceWriteExcelFileConstMeta =>
+      const TaskConstMeta(
+        debugName: 'write_excel_file',
+        argNames: ['filePath', 'exportedTables'],
+      );
+
+  @protected
+  Map<String, List<InputRawRow>> dco_decode_Map_String_list_input_raw_row_None(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return Map.fromEntries(
+      dco_decode_list_record_string_list_input_raw_row(
+        raw,
+      ).map((e) => MapEntry(e.$1, e.$2)),
+    );
+  }
 
   @protected
   String dco_decode_String(dynamic raw) {
@@ -145,9 +210,298 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool dco_decode_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as bool;
+  }
+
+  @protected
+  ExportedData dco_decode_box_autoadd_exported_data(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_exported_data(raw);
+  }
+
+  @protected
+  ExportedData dco_decode_exported_data(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return ExportedData(
+      year: dco_decode_u_32(arr[0]),
+      typeName: dco_decode_String(arr[1]),
+      mainTable: dco_decode_output_main_table(arr[2]),
+      personalTables: dco_decode_list_output_personal_tables(arr[3]),
+    );
+  }
+
+  @protected
+  double dco_decode_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  InputRawRow dco_decode_input_raw_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 29)
+      throw Exception('unexpected arr length: expect 29 but see ${arr.length}');
+    return InputRawRow(
+      learningForm: dco_decode_String(arr[0]),
+      speciality: dco_decode_String(arr[1]),
+      name: dco_decode_String(arr[2]),
+      course: dco_decode_String(arr[3]),
+      semester: dco_decode_String(arr[4]),
+      weeksCount: dco_decode_String(arr[5]),
+      studentsCount: dco_decode_String(arr[6]),
+      flowsCount: dco_decode_String(arr[7]),
+      groupsCount: dco_decode_String(arr[8]),
+      subgroupsCount: dco_decode_String(arr[9]),
+      lecturesPlannedCount: dco_decode_String(arr[10]),
+      lecturesTotalCount: dco_decode_String(arr[11]),
+      practicesPlannedCount: dco_decode_String(arr[12]),
+      practicesTotalCount: dco_decode_String(arr[13]),
+      labsPlannedCount: dco_decode_String(arr[14]),
+      labsTotalCount: dco_decode_String(arr[15]),
+      exams: dco_decode_String(arr[16]),
+      examConsults: dco_decode_String(arr[17]),
+      tests: dco_decode_String(arr[18]),
+      qualWorks: dco_decode_String(arr[19]),
+      certificationExams: dco_decode_String(arr[20]),
+      workingPractice: dco_decode_String(arr[21]),
+      teachingPractice: dco_decode_String(arr[22]),
+      consults: dco_decode_String(arr[23]),
+      individualWorks: dco_decode_String(arr[24]),
+      courseWorks: dco_decode_String(arr[25]),
+      postgraduateExams: dco_decode_String(arr[26]),
+      supervising: dco_decode_String(arr[27]),
+      internship: dco_decode_String(arr[28]),
+    );
+  }
+
+  @protected
+  List<InputRawRow> dco_decode_list_input_raw_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_input_raw_row).toList();
+  }
+
+  @protected
+  List<OutputMainWorkerRow> dco_decode_list_output_main_worker_row(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_output_main_worker_row)
+        .toList();
+  }
+
+  @protected
+  List<OutputPersonalSemesterRow> dco_decode_list_output_personal_semester_row(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_output_personal_semester_row)
+        .toList();
+  }
+
+  @protected
+  List<OutputPersonalTable> dco_decode_list_output_personal_table(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_output_personal_table)
+        .toList();
+  }
+
+  @protected
+  List<OutputPersonalTables> dco_decode_list_output_personal_tables(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_output_personal_tables)
+        .toList();
+  }
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  List<(String, List<InputRawRow>)>
+  dco_decode_list_record_string_list_input_raw_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_record_string_list_input_raw_row)
+        .toList();
+  }
+
+  @protected
+  OutputHoursRow dco_decode_output_hours_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 14)
+      throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
+    return OutputHoursRow(
+      lectures: dco_decode_f_64(arr[0]),
+      practices: dco_decode_f_64(arr[1]),
+      labs: dco_decode_f_64(arr[2]),
+      exams: dco_decode_f_64(arr[3]),
+      examConsults: dco_decode_f_64(arr[4]),
+      tests: dco_decode_f_64(arr[5]),
+      qualWorks: dco_decode_f_64(arr[6]),
+      workingPractice: dco_decode_f_64(arr[7]),
+      teachingPractice: dco_decode_f_64(arr[8]),
+      consults: dco_decode_f_64(arr[9]),
+      individualWorks: dco_decode_f_64(arr[10]),
+      courseWorks: dco_decode_f_64(arr[11]),
+      supervising: dco_decode_f_64(arr[12]),
+      total: dco_decode_f_64(arr[13]),
+    );
+  }
+
+  @protected
+  OutputMainRateAndHours dco_decode_output_main_rate_and_hours(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return OutputMainRateAndHours(
+      rate: dco_decode_f_64(arr[0]),
+      semester1: dco_decode_output_hours_row(arr[1]),
+      semester2: dco_decode_output_hours_row(arr[2]),
+      year: dco_decode_output_hours_row(arr[3]),
+    );
+  }
+
+  @protected
+  OutputMainTable dco_decode_output_main_table(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 13)
+      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
+    return OutputMainTable(
+      heads: dco_decode_list_output_main_worker_row(arr[0]),
+      headsTotal: dco_decode_output_main_rate_and_hours(arr[1]),
+      professors: dco_decode_list_output_main_worker_row(arr[2]),
+      professorsTotal: dco_decode_output_main_rate_and_hours(arr[3]),
+      associateProfessors: dco_decode_list_output_main_worker_row(arr[4]),
+      associateProfessorsTotal: dco_decode_output_main_rate_and_hours(arr[5]),
+      lecturers: dco_decode_list_output_main_worker_row(arr[6]),
+      lecturersTotal: dco_decode_output_main_rate_and_hours(arr[7]),
+      assistants: dco_decode_list_output_main_worker_row(arr[8]),
+      assistantsTotal: dco_decode_output_main_rate_and_hours(arr[9]),
+      partTimers: dco_decode_list_output_main_worker_row(arr[10]),
+      partTimersTotal: dco_decode_output_main_rate_and_hours(arr[11]),
+      total: dco_decode_output_main_rate_and_hours(arr[12]),
+    );
+  }
+
+  @protected
+  OutputMainWorkerRow dco_decode_output_main_worker_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return OutputMainWorkerRow(
+      firstName: dco_decode_String(arr[0]),
+      middleName: dco_decode_String(arr[1]),
+      lastName: dco_decode_String(arr[2]),
+      rank: dco_decode_String(arr[3]),
+      rateAndHours: dco_decode_output_main_rate_and_hours(arr[4]),
+    );
+  }
+
+  @protected
+  OutputPersonalSemesterRow dco_decode_output_personal_semester_row(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return OutputPersonalSemesterRow(
+      name: dco_decode_String(arr[0]),
+      learningForm: dco_decode_String(arr[1]),
+      speciality: dco_decode_String(arr[2]),
+      group: dco_decode_String(arr[3]),
+      course: dco_decode_String(arr[4]),
+      studentsCount: dco_decode_u_32(arr[5]),
+      hours: dco_decode_output_hours_row(arr[6]),
+      mergeLecturesWithNext: dco_decode_bool(arr[7]),
+    );
+  }
+
+  @protected
+  OutputPersonalTable dco_decode_output_personal_table(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 18)
+      throw Exception('unexpected arr length: expect 18 but see ${arr.length}');
+    return OutputPersonalTable(
+      id: dco_decode_u_32(arr[0]),
+      firstName: dco_decode_String(arr[1]),
+      middleName: dco_decode_String(arr[2]),
+      lastName: dco_decode_String(arr[3]),
+      commentSemester1: dco_decode_String(arr[4]),
+      commentSemester2: dco_decode_String(arr[5]),
+      rank: dco_decode_String(arr[6]),
+      semester1: dco_decode_list_output_personal_semester_row(arr[7]),
+      semester1Rate: dco_decode_f_64(arr[8]),
+      semester1TotalDay: dco_decode_output_hours_row(arr[9]),
+      semester1TotalEvening: dco_decode_output_hours_row(arr[10]),
+      semester1Total: dco_decode_output_hours_row(arr[11]),
+      semester2: dco_decode_list_output_personal_semester_row(arr[12]),
+      semester2Rate: dco_decode_f_64(arr[13]),
+      semester2TotalDay: dco_decode_output_hours_row(arr[14]),
+      semester2TotalEvening: dco_decode_output_hours_row(arr[15]),
+      semester2Total: dco_decode_output_hours_row(arr[16]),
+      yearTotal: dco_decode_output_hours_row(arr[17]),
+    );
+  }
+
+  @protected
+  OutputPersonalTables dco_decode_output_personal_tables(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return OutputPersonalTables(
+      workerLastName: dco_decode_String(arr[0]),
+      tables: dco_decode_list_output_personal_table(arr[1]),
+    );
+  }
+
+  @protected
+  ParsedExcelFile dco_decode_parsed_excel_file(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 1)
+      throw Exception('unexpected arr length: expect 1 but see ${arr.length}');
+    return ParsedExcelFile(
+      data: dco_decode_Map_String_list_input_raw_row_None(arr[0]),
+    );
+  }
+
+  @protected
+  (String, List<InputRawRow>) dco_decode_record_string_list_input_raw_row(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_String(arr[0]), dco_decode_list_input_raw_row(arr[1]));
+  }
+
+  @protected
+  int dco_decode_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -163,6 +517,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Map<String, List<InputRawRow>> sse_decode_Map_String_list_input_raw_row_None(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_list_record_string_list_input_raw_row(deserializer);
+    return Map.fromEntries(inner.map((e) => MapEntry(e.$1, e.$2)));
+  }
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
@@ -170,10 +533,423 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool sse_decode_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  ExportedData sse_decode_box_autoadd_exported_data(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_exported_data(deserializer));
+  }
+
+  @protected
+  ExportedData sse_decode_exported_data(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_year = sse_decode_u_32(deserializer);
+    var var_typeName = sse_decode_String(deserializer);
+    var var_mainTable = sse_decode_output_main_table(deserializer);
+    var var_personalTables = sse_decode_list_output_personal_tables(
+      deserializer,
+    );
+    return ExportedData(
+      year: var_year,
+      typeName: var_typeName,
+      mainTable: var_mainTable,
+      personalTables: var_personalTables,
+    );
+  }
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat64();
+  }
+
+  @protected
+  InputRawRow sse_decode_input_raw_row(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_learningForm = sse_decode_String(deserializer);
+    var var_speciality = sse_decode_String(deserializer);
+    var var_name = sse_decode_String(deserializer);
+    var var_course = sse_decode_String(deserializer);
+    var var_semester = sse_decode_String(deserializer);
+    var var_weeksCount = sse_decode_String(deserializer);
+    var var_studentsCount = sse_decode_String(deserializer);
+    var var_flowsCount = sse_decode_String(deserializer);
+    var var_groupsCount = sse_decode_String(deserializer);
+    var var_subgroupsCount = sse_decode_String(deserializer);
+    var var_lecturesPlannedCount = sse_decode_String(deserializer);
+    var var_lecturesTotalCount = sse_decode_String(deserializer);
+    var var_practicesPlannedCount = sse_decode_String(deserializer);
+    var var_practicesTotalCount = sse_decode_String(deserializer);
+    var var_labsPlannedCount = sse_decode_String(deserializer);
+    var var_labsTotalCount = sse_decode_String(deserializer);
+    var var_exams = sse_decode_String(deserializer);
+    var var_examConsults = sse_decode_String(deserializer);
+    var var_tests = sse_decode_String(deserializer);
+    var var_qualWorks = sse_decode_String(deserializer);
+    var var_certificationExams = sse_decode_String(deserializer);
+    var var_workingPractice = sse_decode_String(deserializer);
+    var var_teachingPractice = sse_decode_String(deserializer);
+    var var_consults = sse_decode_String(deserializer);
+    var var_individualWorks = sse_decode_String(deserializer);
+    var var_courseWorks = sse_decode_String(deserializer);
+    var var_postgraduateExams = sse_decode_String(deserializer);
+    var var_supervising = sse_decode_String(deserializer);
+    var var_internship = sse_decode_String(deserializer);
+    return InputRawRow(
+      learningForm: var_learningForm,
+      speciality: var_speciality,
+      name: var_name,
+      course: var_course,
+      semester: var_semester,
+      weeksCount: var_weeksCount,
+      studentsCount: var_studentsCount,
+      flowsCount: var_flowsCount,
+      groupsCount: var_groupsCount,
+      subgroupsCount: var_subgroupsCount,
+      lecturesPlannedCount: var_lecturesPlannedCount,
+      lecturesTotalCount: var_lecturesTotalCount,
+      practicesPlannedCount: var_practicesPlannedCount,
+      practicesTotalCount: var_practicesTotalCount,
+      labsPlannedCount: var_labsPlannedCount,
+      labsTotalCount: var_labsTotalCount,
+      exams: var_exams,
+      examConsults: var_examConsults,
+      tests: var_tests,
+      qualWorks: var_qualWorks,
+      certificationExams: var_certificationExams,
+      workingPractice: var_workingPractice,
+      teachingPractice: var_teachingPractice,
+      consults: var_consults,
+      individualWorks: var_individualWorks,
+      courseWorks: var_courseWorks,
+      postgraduateExams: var_postgraduateExams,
+      supervising: var_supervising,
+      internship: var_internship,
+    );
+  }
+
+  @protected
+  List<InputRawRow> sse_decode_list_input_raw_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <InputRawRow>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_input_raw_row(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<OutputMainWorkerRow> sse_decode_list_output_main_worker_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <OutputMainWorkerRow>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_output_main_worker_row(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<OutputPersonalSemesterRow> sse_decode_list_output_personal_semester_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <OutputPersonalSemesterRow>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_output_personal_semester_row(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<OutputPersonalTable> sse_decode_list_output_personal_table(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <OutputPersonalTable>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_output_personal_table(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<OutputPersonalTables> sse_decode_list_output_personal_tables(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <OutputPersonalTables>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_output_personal_tables(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  List<(String, List<InputRawRow>)>
+  sse_decode_list_record_string_list_input_raw_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <(String, List<InputRawRow>)>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_record_string_list_input_raw_row(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  OutputHoursRow sse_decode_output_hours_row(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_lectures = sse_decode_f_64(deserializer);
+    var var_practices = sse_decode_f_64(deserializer);
+    var var_labs = sse_decode_f_64(deserializer);
+    var var_exams = sse_decode_f_64(deserializer);
+    var var_examConsults = sse_decode_f_64(deserializer);
+    var var_tests = sse_decode_f_64(deserializer);
+    var var_qualWorks = sse_decode_f_64(deserializer);
+    var var_workingPractice = sse_decode_f_64(deserializer);
+    var var_teachingPractice = sse_decode_f_64(deserializer);
+    var var_consults = sse_decode_f_64(deserializer);
+    var var_individualWorks = sse_decode_f_64(deserializer);
+    var var_courseWorks = sse_decode_f_64(deserializer);
+    var var_supervising = sse_decode_f_64(deserializer);
+    var var_total = sse_decode_f_64(deserializer);
+    return OutputHoursRow(
+      lectures: var_lectures,
+      practices: var_practices,
+      labs: var_labs,
+      exams: var_exams,
+      examConsults: var_examConsults,
+      tests: var_tests,
+      qualWorks: var_qualWorks,
+      workingPractice: var_workingPractice,
+      teachingPractice: var_teachingPractice,
+      consults: var_consults,
+      individualWorks: var_individualWorks,
+      courseWorks: var_courseWorks,
+      supervising: var_supervising,
+      total: var_total,
+    );
+  }
+
+  @protected
+  OutputMainRateAndHours sse_decode_output_main_rate_and_hours(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_rate = sse_decode_f_64(deserializer);
+    var var_semester1 = sse_decode_output_hours_row(deserializer);
+    var var_semester2 = sse_decode_output_hours_row(deserializer);
+    var var_year = sse_decode_output_hours_row(deserializer);
+    return OutputMainRateAndHours(
+      rate: var_rate,
+      semester1: var_semester1,
+      semester2: var_semester2,
+      year: var_year,
+    );
+  }
+
+  @protected
+  OutputMainTable sse_decode_output_main_table(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_heads = sse_decode_list_output_main_worker_row(deserializer);
+    var var_headsTotal = sse_decode_output_main_rate_and_hours(deserializer);
+    var var_professors = sse_decode_list_output_main_worker_row(deserializer);
+    var var_professorsTotal = sse_decode_output_main_rate_and_hours(
+      deserializer,
+    );
+    var var_associateProfessors = sse_decode_list_output_main_worker_row(
+      deserializer,
+    );
+    var var_associateProfessorsTotal = sse_decode_output_main_rate_and_hours(
+      deserializer,
+    );
+    var var_lecturers = sse_decode_list_output_main_worker_row(deserializer);
+    var var_lecturersTotal = sse_decode_output_main_rate_and_hours(
+      deserializer,
+    );
+    var var_assistants = sse_decode_list_output_main_worker_row(deserializer);
+    var var_assistantsTotal = sse_decode_output_main_rate_and_hours(
+      deserializer,
+    );
+    var var_partTimers = sse_decode_list_output_main_worker_row(deserializer);
+    var var_partTimersTotal = sse_decode_output_main_rate_and_hours(
+      deserializer,
+    );
+    var var_total = sse_decode_output_main_rate_and_hours(deserializer);
+    return OutputMainTable(
+      heads: var_heads,
+      headsTotal: var_headsTotal,
+      professors: var_professors,
+      professorsTotal: var_professorsTotal,
+      associateProfessors: var_associateProfessors,
+      associateProfessorsTotal: var_associateProfessorsTotal,
+      lecturers: var_lecturers,
+      lecturersTotal: var_lecturersTotal,
+      assistants: var_assistants,
+      assistantsTotal: var_assistantsTotal,
+      partTimers: var_partTimers,
+      partTimersTotal: var_partTimersTotal,
+      total: var_total,
+    );
+  }
+
+  @protected
+  OutputMainWorkerRow sse_decode_output_main_worker_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_firstName = sse_decode_String(deserializer);
+    var var_middleName = sse_decode_String(deserializer);
+    var var_lastName = sse_decode_String(deserializer);
+    var var_rank = sse_decode_String(deserializer);
+    var var_rateAndHours = sse_decode_output_main_rate_and_hours(deserializer);
+    return OutputMainWorkerRow(
+      firstName: var_firstName,
+      middleName: var_middleName,
+      lastName: var_lastName,
+      rank: var_rank,
+      rateAndHours: var_rateAndHours,
+    );
+  }
+
+  @protected
+  OutputPersonalSemesterRow sse_decode_output_personal_semester_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_learningForm = sse_decode_String(deserializer);
+    var var_speciality = sse_decode_String(deserializer);
+    var var_group = sse_decode_String(deserializer);
+    var var_course = sse_decode_String(deserializer);
+    var var_studentsCount = sse_decode_u_32(deserializer);
+    var var_hours = sse_decode_output_hours_row(deserializer);
+    var var_mergeLecturesWithNext = sse_decode_bool(deserializer);
+    return OutputPersonalSemesterRow(
+      name: var_name,
+      learningForm: var_learningForm,
+      speciality: var_speciality,
+      group: var_group,
+      course: var_course,
+      studentsCount: var_studentsCount,
+      hours: var_hours,
+      mergeLecturesWithNext: var_mergeLecturesWithNext,
+    );
+  }
+
+  @protected
+  OutputPersonalTable sse_decode_output_personal_table(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_u_32(deserializer);
+    var var_firstName = sse_decode_String(deserializer);
+    var var_middleName = sse_decode_String(deserializer);
+    var var_lastName = sse_decode_String(deserializer);
+    var var_commentSemester1 = sse_decode_String(deserializer);
+    var var_commentSemester2 = sse_decode_String(deserializer);
+    var var_rank = sse_decode_String(deserializer);
+    var var_semester1 = sse_decode_list_output_personal_semester_row(
+      deserializer,
+    );
+    var var_semester1Rate = sse_decode_f_64(deserializer);
+    var var_semester1TotalDay = sse_decode_output_hours_row(deserializer);
+    var var_semester1TotalEvening = sse_decode_output_hours_row(deserializer);
+    var var_semester1Total = sse_decode_output_hours_row(deserializer);
+    var var_semester2 = sse_decode_list_output_personal_semester_row(
+      deserializer,
+    );
+    var var_semester2Rate = sse_decode_f_64(deserializer);
+    var var_semester2TotalDay = sse_decode_output_hours_row(deserializer);
+    var var_semester2TotalEvening = sse_decode_output_hours_row(deserializer);
+    var var_semester2Total = sse_decode_output_hours_row(deserializer);
+    var var_yearTotal = sse_decode_output_hours_row(deserializer);
+    return OutputPersonalTable(
+      id: var_id,
+      firstName: var_firstName,
+      middleName: var_middleName,
+      lastName: var_lastName,
+      commentSemester1: var_commentSemester1,
+      commentSemester2: var_commentSemester2,
+      rank: var_rank,
+      semester1: var_semester1,
+      semester1Rate: var_semester1Rate,
+      semester1TotalDay: var_semester1TotalDay,
+      semester1TotalEvening: var_semester1TotalEvening,
+      semester1Total: var_semester1Total,
+      semester2: var_semester2,
+      semester2Rate: var_semester2Rate,
+      semester2TotalDay: var_semester2TotalDay,
+      semester2TotalEvening: var_semester2TotalEvening,
+      semester2Total: var_semester2Total,
+      yearTotal: var_yearTotal,
+    );
+  }
+
+  @protected
+  OutputPersonalTables sse_decode_output_personal_tables(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_workerLastName = sse_decode_String(deserializer);
+    var var_tables = sse_decode_list_output_personal_table(deserializer);
+    return OutputPersonalTables(
+      workerLastName: var_workerLastName,
+      tables: var_tables,
+    );
+  }
+
+  @protected
+  ParsedExcelFile sse_decode_parsed_excel_file(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_data = sse_decode_Map_String_list_input_raw_row_None(deserializer);
+    return ParsedExcelFile(data: var_data);
+  }
+
+  @protected
+  (String, List<InputRawRow>) sse_decode_record_string_list_input_raw_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    var var_field1 = sse_decode_list_input_raw_row(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint32();
   }
 
   @protected
@@ -194,15 +970,145 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  bool sse_decode_bool(SseDeserializer deserializer) {
+  void sse_encode_Map_String_list_input_raw_row_None(
+    Map<String, List<InputRawRow>> self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8() != 0;
+    sse_encode_list_record_string_list_input_raw_row(
+      self.entries.map((e) => (e.key, e.value)).toList(),
+      serializer,
+    );
   }
 
   @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
+  }
+
+  @protected
+  void sse_encode_bool(bool self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_exported_data(
+    ExportedData self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_exported_data(self, serializer);
+  }
+
+  @protected
+  void sse_encode_exported_data(ExportedData self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.year, serializer);
+    sse_encode_String(self.typeName, serializer);
+    sse_encode_output_main_table(self.mainTable, serializer);
+    sse_encode_list_output_personal_tables(self.personalTables, serializer);
+  }
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat64(self);
+  }
+
+  @protected
+  void sse_encode_input_raw_row(InputRawRow self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.learningForm, serializer);
+    sse_encode_String(self.speciality, serializer);
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.course, serializer);
+    sse_encode_String(self.semester, serializer);
+    sse_encode_String(self.weeksCount, serializer);
+    sse_encode_String(self.studentsCount, serializer);
+    sse_encode_String(self.flowsCount, serializer);
+    sse_encode_String(self.groupsCount, serializer);
+    sse_encode_String(self.subgroupsCount, serializer);
+    sse_encode_String(self.lecturesPlannedCount, serializer);
+    sse_encode_String(self.lecturesTotalCount, serializer);
+    sse_encode_String(self.practicesPlannedCount, serializer);
+    sse_encode_String(self.practicesTotalCount, serializer);
+    sse_encode_String(self.labsPlannedCount, serializer);
+    sse_encode_String(self.labsTotalCount, serializer);
+    sse_encode_String(self.exams, serializer);
+    sse_encode_String(self.examConsults, serializer);
+    sse_encode_String(self.tests, serializer);
+    sse_encode_String(self.qualWorks, serializer);
+    sse_encode_String(self.certificationExams, serializer);
+    sse_encode_String(self.workingPractice, serializer);
+    sse_encode_String(self.teachingPractice, serializer);
+    sse_encode_String(self.consults, serializer);
+    sse_encode_String(self.individualWorks, serializer);
+    sse_encode_String(self.courseWorks, serializer);
+    sse_encode_String(self.postgraduateExams, serializer);
+    sse_encode_String(self.supervising, serializer);
+    sse_encode_String(self.internship, serializer);
+  }
+
+  @protected
+  void sse_encode_list_input_raw_row(
+    List<InputRawRow> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_input_raw_row(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_output_main_worker_row(
+    List<OutputMainWorkerRow> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_output_main_worker_row(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_output_personal_semester_row(
+    List<OutputPersonalSemesterRow> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_output_personal_semester_row(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_output_personal_table(
+    List<OutputPersonalTable> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_output_personal_table(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_output_personal_tables(
+    List<OutputPersonalTables> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_output_personal_tables(item, serializer);
+    }
   }
 
   @protected
@@ -213,6 +1119,169 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
+  }
+
+  @protected
+  void sse_encode_list_record_string_list_input_raw_row(
+    List<(String, List<InputRawRow>)> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_record_string_list_input_raw_row(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_output_hours_row(
+    OutputHoursRow self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_f_64(self.lectures, serializer);
+    sse_encode_f_64(self.practices, serializer);
+    sse_encode_f_64(self.labs, serializer);
+    sse_encode_f_64(self.exams, serializer);
+    sse_encode_f_64(self.examConsults, serializer);
+    sse_encode_f_64(self.tests, serializer);
+    sse_encode_f_64(self.qualWorks, serializer);
+    sse_encode_f_64(self.workingPractice, serializer);
+    sse_encode_f_64(self.teachingPractice, serializer);
+    sse_encode_f_64(self.consults, serializer);
+    sse_encode_f_64(self.individualWorks, serializer);
+    sse_encode_f_64(self.courseWorks, serializer);
+    sse_encode_f_64(self.supervising, serializer);
+    sse_encode_f_64(self.total, serializer);
+  }
+
+  @protected
+  void sse_encode_output_main_rate_and_hours(
+    OutputMainRateAndHours self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_f_64(self.rate, serializer);
+    sse_encode_output_hours_row(self.semester1, serializer);
+    sse_encode_output_hours_row(self.semester2, serializer);
+    sse_encode_output_hours_row(self.year, serializer);
+  }
+
+  @protected
+  void sse_encode_output_main_table(
+    OutputMainTable self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_output_main_worker_row(self.heads, serializer);
+    sse_encode_output_main_rate_and_hours(self.headsTotal, serializer);
+    sse_encode_list_output_main_worker_row(self.professors, serializer);
+    sse_encode_output_main_rate_and_hours(self.professorsTotal, serializer);
+    sse_encode_list_output_main_worker_row(
+      self.associateProfessors,
+      serializer,
+    );
+    sse_encode_output_main_rate_and_hours(
+      self.associateProfessorsTotal,
+      serializer,
+    );
+    sse_encode_list_output_main_worker_row(self.lecturers, serializer);
+    sse_encode_output_main_rate_and_hours(self.lecturersTotal, serializer);
+    sse_encode_list_output_main_worker_row(self.assistants, serializer);
+    sse_encode_output_main_rate_and_hours(self.assistantsTotal, serializer);
+    sse_encode_list_output_main_worker_row(self.partTimers, serializer);
+    sse_encode_output_main_rate_and_hours(self.partTimersTotal, serializer);
+    sse_encode_output_main_rate_and_hours(self.total, serializer);
+  }
+
+  @protected
+  void sse_encode_output_main_worker_row(
+    OutputMainWorkerRow self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.firstName, serializer);
+    sse_encode_String(self.middleName, serializer);
+    sse_encode_String(self.lastName, serializer);
+    sse_encode_String(self.rank, serializer);
+    sse_encode_output_main_rate_and_hours(self.rateAndHours, serializer);
+  }
+
+  @protected
+  void sse_encode_output_personal_semester_row(
+    OutputPersonalSemesterRow self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.learningForm, serializer);
+    sse_encode_String(self.speciality, serializer);
+    sse_encode_String(self.group, serializer);
+    sse_encode_String(self.course, serializer);
+    sse_encode_u_32(self.studentsCount, serializer);
+    sse_encode_output_hours_row(self.hours, serializer);
+    sse_encode_bool(self.mergeLecturesWithNext, serializer);
+  }
+
+  @protected
+  void sse_encode_output_personal_table(
+    OutputPersonalTable self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.id, serializer);
+    sse_encode_String(self.firstName, serializer);
+    sse_encode_String(self.middleName, serializer);
+    sse_encode_String(self.lastName, serializer);
+    sse_encode_String(self.commentSemester1, serializer);
+    sse_encode_String(self.commentSemester2, serializer);
+    sse_encode_String(self.rank, serializer);
+    sse_encode_list_output_personal_semester_row(self.semester1, serializer);
+    sse_encode_f_64(self.semester1Rate, serializer);
+    sse_encode_output_hours_row(self.semester1TotalDay, serializer);
+    sse_encode_output_hours_row(self.semester1TotalEvening, serializer);
+    sse_encode_output_hours_row(self.semester1Total, serializer);
+    sse_encode_list_output_personal_semester_row(self.semester2, serializer);
+    sse_encode_f_64(self.semester2Rate, serializer);
+    sse_encode_output_hours_row(self.semester2TotalDay, serializer);
+    sse_encode_output_hours_row(self.semester2TotalEvening, serializer);
+    sse_encode_output_hours_row(self.semester2Total, serializer);
+    sse_encode_output_hours_row(self.yearTotal, serializer);
+  }
+
+  @protected
+  void sse_encode_output_personal_tables(
+    OutputPersonalTables self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.workerLastName, serializer);
+    sse_encode_list_output_personal_table(self.tables, serializer);
+  }
+
+  @protected
+  void sse_encode_parsed_excel_file(
+    ParsedExcelFile self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Map_String_list_input_raw_row_None(self.data, serializer);
+  }
+
+  @protected
+  void sse_encode_record_string_list_input_raw_row(
+    (String, List<InputRawRow>) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.$1, serializer);
+    sse_encode_list_input_raw_row(self.$2, serializer);
+  }
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint32(self);
   }
 
   @protected
@@ -230,11 +1299,5 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
-  }
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self ? 1 : 0);
   }
 }

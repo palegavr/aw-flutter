@@ -6,9 +6,10 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
-import 'package:aw_flutter/src/rust/api/simple.dart';
+import 'package:aw_flutter/src/rust/api/excel_interface.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:aw_flutter/src/rust/excel/data.dart';
 import 'package:aw_flutter/src/rust/frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 
@@ -21,10 +22,87 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   });
 
   @protected
+  Map<String, List<InputRawRow>> dco_decode_Map_String_list_input_raw_row_None(
+    dynamic raw,
+  );
+
+  @protected
   String dco_decode_String(dynamic raw);
 
   @protected
+  bool dco_decode_bool(dynamic raw);
+
+  @protected
+  ExportedData dco_decode_box_autoadd_exported_data(dynamic raw);
+
+  @protected
+  ExportedData dco_decode_exported_data(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
+
+  @protected
+  InputRawRow dco_decode_input_raw_row(dynamic raw);
+
+  @protected
+  List<InputRawRow> dco_decode_list_input_raw_row(dynamic raw);
+
+  @protected
+  List<OutputMainWorkerRow> dco_decode_list_output_main_worker_row(dynamic raw);
+
+  @protected
+  List<OutputPersonalSemesterRow> dco_decode_list_output_personal_semester_row(
+    dynamic raw,
+  );
+
+  @protected
+  List<OutputPersonalTable> dco_decode_list_output_personal_table(dynamic raw);
+
+  @protected
+  List<OutputPersonalTables> dco_decode_list_output_personal_tables(
+    dynamic raw,
+  );
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  List<(String, List<InputRawRow>)>
+  dco_decode_list_record_string_list_input_raw_row(dynamic raw);
+
+  @protected
+  OutputHoursRow dco_decode_output_hours_row(dynamic raw);
+
+  @protected
+  OutputMainRateAndHours dco_decode_output_main_rate_and_hours(dynamic raw);
+
+  @protected
+  OutputMainTable dco_decode_output_main_table(dynamic raw);
+
+  @protected
+  OutputMainWorkerRow dco_decode_output_main_worker_row(dynamic raw);
+
+  @protected
+  OutputPersonalSemesterRow dco_decode_output_personal_semester_row(
+    dynamic raw,
+  );
+
+  @protected
+  OutputPersonalTable dco_decode_output_personal_table(dynamic raw);
+
+  @protected
+  OutputPersonalTables dco_decode_output_personal_tables(dynamic raw);
+
+  @protected
+  ParsedExcelFile dco_decode_parsed_excel_file(dynamic raw);
+
+  @protected
+  (String, List<InputRawRow>) dco_decode_record_string_list_input_raw_row(
+    dynamic raw,
+  );
+
+  @protected
+  int dco_decode_u_32(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -33,10 +111,103 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void dco_decode_unit(dynamic raw);
 
   @protected
+  Map<String, List<InputRawRow>> sse_decode_Map_String_list_input_raw_row_None(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  ExportedData sse_decode_box_autoadd_exported_data(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ExportedData sse_decode_exported_data(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
+  InputRawRow sse_decode_input_raw_row(SseDeserializer deserializer);
+
+  @protected
+  List<InputRawRow> sse_decode_list_input_raw_row(SseDeserializer deserializer);
+
+  @protected
+  List<OutputMainWorkerRow> sse_decode_list_output_main_worker_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<OutputPersonalSemesterRow> sse_decode_list_output_personal_semester_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<OutputPersonalTable> sse_decode_list_output_personal_table(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<OutputPersonalTables> sse_decode_list_output_personal_tables(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  List<(String, List<InputRawRow>)>
+  sse_decode_list_record_string_list_input_raw_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OutputHoursRow sse_decode_output_hours_row(SseDeserializer deserializer);
+
+  @protected
+  OutputMainRateAndHours sse_decode_output_main_rate_and_hours(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OutputMainTable sse_decode_output_main_table(SseDeserializer deserializer);
+
+  @protected
+  OutputMainWorkerRow sse_decode_output_main_worker_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OutputPersonalSemesterRow sse_decode_output_personal_semester_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OutputPersonalTable sse_decode_output_personal_table(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OutputPersonalTables sse_decode_output_personal_tables(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ParsedExcelFile sse_decode_parsed_excel_file(SseDeserializer deserializer);
+
+  @protected
+  (String, List<InputRawRow>) sse_decode_record_string_list_input_raw_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -48,16 +219,130 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
-  bool sse_decode_bool(SseDeserializer deserializer);
+  void sse_encode_Map_String_list_input_raw_row_None(
+    Map<String, List<InputRawRow>> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_String(String self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_exported_data(
+    ExportedData self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_exported_data(ExportedData self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_input_raw_row(InputRawRow self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_input_raw_row(
+    List<InputRawRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_output_main_worker_row(
+    List<OutputMainWorkerRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_output_personal_semester_row(
+    List<OutputPersonalSemesterRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_output_personal_table(
+    List<OutputPersonalTable> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_output_personal_tables(
+    List<OutputPersonalTables> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_list_record_string_list_input_raw_row(
+    List<(String, List<InputRawRow>)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_output_hours_row(
+    OutputHoursRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_output_main_rate_and_hours(
+    OutputMainRateAndHours self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_output_main_table(
+    OutputMainTable self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_output_main_worker_row(
+    OutputMainWorkerRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_output_personal_semester_row(
+    OutputPersonalSemesterRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_output_personal_table(
+    OutputPersonalTable self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_output_personal_tables(
+    OutputPersonalTables self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_parsed_excel_file(
+    ParsedExcelFile self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_string_list_input_raw_row(
+    (String, List<InputRawRow>) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
@@ -67,9 +352,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer);
 }
 
 // Section: wire_class
