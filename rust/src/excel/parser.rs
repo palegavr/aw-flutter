@@ -381,7 +381,6 @@ pub fn parse_file(file_path: &str) -> HashMap<String, Vec<InputRawRow>> {
     let mut map = HashMap::<String, Vec<InputRawRow>>::new();
     for i in 0..sheets.len() {
         let sheet = &sheets[i];
-        println!("Spreadsheet #{}: {}", i, sheet.get_name());
         let values = parse_sheet(sheet);
         map.insert(sheet.get_name().to_string(), values);
     }
@@ -429,7 +428,5 @@ fn parse_sheet(sheet: &Worksheet) -> Vec<InputRawRow> {
         raw_rows.push(row);
         y += 1;
     }
-    println!("Last row: {:#?}", raw_rows.last().unwrap());
-    println!("Vec size: {}", raw_rows.len());
     return raw_rows;
 }

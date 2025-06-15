@@ -1,3 +1,4 @@
+import 'package:aw_flutter/features/archive/presentation/view/archive_entries_screen.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_screen.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/import_screen.dart';
 import 'package:aw_flutter/features/initial/presentation/view/initial_screen.dart';
@@ -22,6 +23,10 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const ImportScreen());
           case DistributeScreen.routeName:
             return MaterialPageRoute(builder: (_) => const DistributeScreen());
+          case ArchiveEntriesScreen.routeName:
+            return MaterialPageRoute(
+              builder: (_) => const ArchiveEntriesScreen(),
+            );
         }
         return null;
       },

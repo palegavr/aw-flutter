@@ -1,6 +1,7 @@
-import 'package:aw_flutter/features/workload_distribution/domain/group_model.dart';
-import 'package:aw_flutter/features/workload_distribution/domain/worker_model.dart';
-import 'package:aw_flutter/features/workload_distribution/domain/workload_input_model.dart';
+import 'package:aw_flutter/features/workload_distribution/data/group_model.dart';
+import 'package:aw_flutter/features/workload_distribution/data/worker_model.dart';
+import 'package:aw_flutter/features/workload_distribution/data/workload_input_model.dart';
+import 'package:uuid/uuid.dart';
 
 class WlOutputHours {
   final int? lectures;
@@ -58,7 +59,6 @@ class WorkloadOutputModel {
 }
 
 class WorkloadOutputTableModel {
-  final int id;
   final List<WorkloadOutputModel> semester1;
   final List<WorkloadOutputModel> semester2;
   final double rate;
@@ -68,7 +68,6 @@ class WorkloadOutputTableModel {
   final String? fromDate;
 
   const WorkloadOutputTableModel({
-    required this.id,
     required this.semester1,
     required this.semester2,
     required this.rate,
@@ -79,12 +78,15 @@ class WorkloadOutputTableModel {
   });
 }
 
+enum WorkerOutputTableType { primary, secondary }
+
 class WorkloadOutputForWorker {
+  final String id = const Uuid().v4();
   final WorkerModel worker;
   final WorkloadOutputTableModel primaryTable;
   final WorkloadOutputTableModel? secondaryTable;
 
-  const WorkloadOutputForWorker({
+  WorkloadOutputForWorker({
     required this.worker,
     required this.primaryTable,
     this.secondaryTable,
