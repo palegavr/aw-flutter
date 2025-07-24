@@ -4,19 +4,19 @@ import 'package:aw_flutter/features/workload_distribution/data/workload_input_mo
 import 'package:uuid/uuid.dart';
 
 class WlOutputHours {
-  final int? lectures;
-  final int? practices;
-  final int? labs;
-  final int? exams;
-  final int? examConsults;
-  final int? tests;
-  final int? qualificationWorks;
-  final int? workingPractices;
-  final int? teachingPractices;
-  final int? currentConsults;
-  final int? individualWorks;
-  final int? courseWorks;
-  final int? postgraduateControl;
+  final double? lectures;
+  final double? practices;
+  final double? labs;
+  final double? exams;
+  final double? examConsults;
+  final double? tests;
+  final double? qualificationWorks;
+  final double? workingPractices;
+  final double? teachingPractices;
+  final double? currentConsults;
+  final double? individualWorks;
+  final double? courseWorks;
+  final double? postgraduateControl;
 
   const WlOutputHours({
     this.lectures,
