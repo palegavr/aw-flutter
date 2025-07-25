@@ -3,16 +3,16 @@ enum EmployeeRank { head, professor, associate, lecturer, assistant }
 class EmployeeDto {
   final String id;
   final String firstName;
-  final String middleName;
   final String lastName;
+  final String patronymic;
   final EmployeeRank rank;
   final List<EmployeeRateDto> rates;
 
   EmployeeDto({
     required this.id,
     required this.firstName,
-    required this.middleName,
     required this.lastName,
+    required this.patronymic,
     required this.rank,
     required this.rates,
   });

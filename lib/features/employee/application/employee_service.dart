@@ -5,7 +5,7 @@ class EmployeeService {
     EmployeeDto(
       id: 'emp-001',
       firstName: 'Ivan',
-      middleName: 'Petrovych',
+      patronymic: 'Petrovych',
       lastName: 'Shevchenko',
       rank: EmployeeRank.professor,
       rates: [
@@ -19,7 +19,7 @@ class EmployeeService {
     EmployeeDto(
       id: 'emp-002',
       firstName: 'Olena',
-      middleName: 'Andriyivna',
+      patronymic: 'Andriyivna',
       lastName: 'Kovalchuk',
       rank: EmployeeRank.lecturer,
       rates: [
@@ -38,7 +38,7 @@ class EmployeeService {
     EmployeeDto(
       id: 'emp-003',
       firstName: 'Taras',
-      middleName: 'Mykolayovych',
+      patronymic: 'Mykolayovych',
       lastName: 'Melnyk',
       rank: EmployeeRank.associate,
       rates: [
@@ -62,7 +62,7 @@ class EmployeeService {
     EmployeeDto(
       id: 'emp-004',
       firstName: 'Nadiia',
-      middleName: 'Volodymyrivna',
+      patronymic: 'Volodymyrivna',
       lastName: 'Tkachenko',
       rank: EmployeeRank.assistant,
       rates: [
@@ -76,7 +76,7 @@ class EmployeeService {
     EmployeeDto(
       id: 'emp-005',
       firstName: 'Yurii',
-      middleName: 'Stepanovych',
+      patronymic: 'Stepanovych',
       lastName: 'Bondarenko',
       rank: EmployeeRank.head,
       rates: [
@@ -88,8 +88,6 @@ class EmployeeService {
       ],
     ),
   ];
-
-
 
   void createEmployee() async {
     // todo
