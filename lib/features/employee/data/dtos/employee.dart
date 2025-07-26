@@ -1,4 +1,14 @@
-enum EmployeeRank { head, professor, associate, lecturer, assistant }
+enum EmployeeRank {
+  head('Завідувач'),
+  professor('Професор'),
+  associate('Доцент'),
+  lecturer('Лектор'),
+  assistant('Асистент');
+
+  final String displayName;
+
+  const EmployeeRank(this.displayName);
+}
 
 class EmployeeDto {
   final String id;
