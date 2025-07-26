@@ -1,7 +1,15 @@
 import 'package:aw_flutter/features/employee/data/dtos/employee.dart';
 
 class EmployeeService {
-  final List<EmployeeDto> mockEmployees = [
+  EmployeeService._();
+
+  static final EmployeeService _instance = EmployeeService._();
+
+  factory EmployeeService() {
+    return _instance;
+  }
+
+  final List<EmployeeDto> _mockEmployees = [
     EmployeeDto(
       id: 'emp-001',
       firstName: 'Ivan',
@@ -95,6 +103,7 @@ class EmployeeService {
   }
 
   Future<List<EmployeeDto>> getEmployees() async {
-    return mockEmployees;
+    await Future.delayed(const Duration(seconds: 1));
+    return _mockEmployees;
   }
 }
