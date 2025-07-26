@@ -1,4 +1,5 @@
 import 'package:aw_flutter/app.dart';
+import 'package:aw_flutter/features/employee/presentation/bloc/employee_bloc.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/bloc/import_bloc.dart';
 import 'package:aw_flutter/src/rust/frb_generated.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,10 @@ Future<void> main() async {
   await RustLib.init();
   runApp(
     MultiBlocProvider(
-      providers: [BlocProvider(create: (_) => ImportBloc())],
+      providers: [
+        BlocProvider(create: (_) => ImportBloc()),
+        BlocProvider(create: (_) => EmployeeBlock()),
+      ],
       child: const MyApp(),
     ),
   );
