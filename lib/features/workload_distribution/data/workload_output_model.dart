@@ -1,3 +1,4 @@
+import 'package:aw_flutter/features/workload_distribution/data/dtos/learning_form.dart';
 import 'package:aw_flutter/features/workload_distribution/data/group_model.dart';
 import 'package:aw_flutter/features/workload_distribution/data/worker_model.dart';
 import 'package:aw_flutter/features/workload_distribution/data/workload_input_model.dart';
@@ -36,7 +37,7 @@ class WlOutputHours {
 }
 
 class WorkloadOutputModel {
-  final WlLearningForm learningForm;
+  final LearningForm learningForm;
   final WlDegree degree;
   final String name;
   final List<String> specialities;
