@@ -27,6 +27,7 @@ pub struct InputRawRow {
     pub teaching_practice: String,       // Навчальна практика
     pub consults: String,                // Поточні консультації
     pub individual_works: String,        // Індивідуальні завдання
+    pub individual_work_types: String,   // Види індивідуальних завдань
     pub course_works: String,            // Курсові роботи (проєкти)
     pub postgraduate_exams: String,      // Проведення аспірантських екзаменів
     pub supervising: String, // Керівництво аспірантами та здобувачами, консультування докторантів

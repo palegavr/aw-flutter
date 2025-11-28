@@ -1,5 +1,5 @@
 import 'package:aw_flutter/features/archive/presentation/view/archive_entries_screen.dart';
-import 'package:aw_flutter/features/employee/presentation/view/view_employees_screen.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_workload_projects_screen.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/import_screen.dart';
 import 'package:aw_flutter/theme.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +22,8 @@ class InitialScreen extends StatelessWidget {
         onTap: () => Navigator.pushNamed(ctx, ArchiveEntriesScreen.routeName),
       ),
       _MenuItem(
-        title: 'Співробітники',
-        onTap: () => Navigator.pushNamed(ctx, ViewEmployeesScreen.routeName),
+        title: 'Проекти',
+        onTap: () => Navigator.pushNamed(ctx, DistributeWorkloadProjectsScreen.routeName),
       ),
     ];
 

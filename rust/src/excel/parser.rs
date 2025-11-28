@@ -30,6 +30,7 @@ pub struct InputHeaderCoordinates {
     pub teaching_practice_x: u32,       // Навчальна практика
     pub consults_x: u32,                // Поточні консультації
     pub individual_works_x: u32,        // Індивідуальні завдання
+    pub individual_work_types_x: u32,   // Види індивідуальних завдань
     pub course_works_x: u32,            // Курсові роботи (проєкти)
     pub postgraduate_exams_x: u32,      // Проведення аспірантських екзаменів
     pub supervising_x: u32,             // Керівництво аспірантами та здобувачами,
@@ -66,10 +67,11 @@ impl Default for InputHeaderCoordinates {
             teaching_practice_x: 24,
             consults_x: 25,
             individual_works_x: 26,
-            course_works_x: 27,
-            postgraduate_exams_x: 28,
-            supervising_x: 29,
-            internship_x: 30,
+            individual_work_types_x: 27,
+            course_works_x: 28,
+            postgraduate_exams_x: 29,
+            supervising_x: 30,
+            internship_x: 31,
         }
     }
 }
@@ -102,6 +104,7 @@ impl InputHeaderCoordinates {
             teaching_practice_x: 0,
             consults_x: 0,
             individual_works_x: 0,
+            individual_work_types_x: 0,
             course_works_x: 0,
             postgraduate_exams_x: 0,
             supervising_x: 0,
@@ -132,11 +135,12 @@ impl InputHeaderCoordinates {
                 h = &mut s.weeks_count_x;
             } else if v.contains("кільк") && v.contains("студ") {
                 h = &mut s.students_count_x;
-            } else if v.contains("кільк") && v.contains("поток") {
+            } else if v.contains("кільк") && v.contains("поток") && !v.contains("шифр")
+            {
                 h = &mut s.flows_count_x;
             } else if v.contains("кільк") && v.contains("підгр") {
                 h = &mut s.subgroups_count_x;
-            } else if v.contains("кільк") && v.contains("груп") {
+            } else if v.contains("кільк") && v.contains("груп") && !v.contains("п/г") {
                 h = &mut s.groups_count_x;
             } else if v.contains("лекц") && v.contains("план") {
                 h = &mut s.lectures_planned_count_x;
@@ -168,8 +172,10 @@ impl InputHeaderCoordinates {
                 h = &mut s.teaching_practice_x;
             } else if v.contains("поточн") && v.contains("конс") {
                 h = &mut s.consults_x;
-            } else if v.contains("інд") && v.contains("завд") {
+            } else if v.contains("інд") && v.contains("завд") && !v.contains("види") {
                 h = &mut s.individual_works_x;
+            } else if v.contains("види") && v.contains("інд") && v.contains("завд") {
+                h = &mut s.individual_work_types_x;
             } else if v.contains("курс") && (v.contains("роб") || v.contains("про")) {
                 h = &mut s.course_works_x;
             } else if v.contains("аспір") && v.contains("екз") {
@@ -320,6 +326,11 @@ pub fn read_row_from_worksheet(
     } else {
         String::new()
     };
+    let individual_work_types = if header.individual_work_types_x > 0 {
+        sheet.get_value((header.individual_work_types_x, y))
+    } else {
+        String::new()
+    };
     let course_works = if header.course_works_x > 0 {
         sheet.get_value((header.course_works_x, y))
     } else {
@@ -367,6 +378,7 @@ pub fn read_row_from_worksheet(
         teaching_practice,
         consults,
         individual_works,
+        individual_work_types,
         course_works,
         postgraduate_exams,
         supervising,
@@ -388,9 +400,10 @@ pub fn parse_file(file_path: &str) -> HashMap<String, Vec<InputRawRow>> {
 }
 
 fn find_table_start(sheet: &Worksheet) -> Option<(u32, u32)> {
-    for i in 1..20 {
+    for i in 1..50 {
         let value = sheet.get_value((1, i));
-        if value == "1" {
+        let trimmed_value = value.trim();
+        if trimmed_value == "1" || trimmed_value == "1.0" {
             return Some((1, i));
         }
     }
@@ -407,26 +420,70 @@ fn read_header(sheet: &Worksheet, y: u32) -> Vec<String> {
 
 fn parse_sheet(sheet: &Worksheet) -> Vec<InputRawRow> {
     let Some(table_start) = find_table_start(sheet) else {
-        println!("Couldn't find starting point of the table :(");
         return vec![];
     };
     let header_raw = read_header(sheet, table_start.1 - 1);
     let header = InputHeaderCoordinates::from_vector(&header_raw);
+
     let mut raw_rows: Vec<InputRawRow> = vec![];
-    let mut y = table_start.1 + 1;
+
+    let mut last_learning_form = String::new();
+    let mut last_speciality = String::new();
+    let mut last_course = String::new();
+    let mut last_semester = String::new();
+
+    let mut y = table_start.1;
     loop {
-        let name_cell = sheet.get_value((header.name_x, y));
-        let name_cell_trimmed = name_cell.trim();
-        if name_cell_trimmed.is_empty() {
+        y += 1;
+        let row_num_val_str = sheet.get_value((1, y)).trim().to_string();
+        let name_val = sheet.get_value((header.name_x, y)).trim().to_string();
+
+        if row_num_val_str.is_empty() && name_val.is_empty() {
+            if sheet.get_value((1, y + 1)).trim().is_empty()
+                && sheet.get_value((header.name_x, y + 1)).trim().is_empty()
+            {
+                break;
+            }
+        }
+
+        if y > 500 {
             break;
         }
-        if name_cell_trimmed == "4" || sheet.get_value((header.speciality_x, y)).is_empty() {
-            y += 1;
-            continue;
+
+        let current_learning_form = sheet
+            .get_value((header.learning_form_x, y))
+            .trim()
+            .to_string();
+        if !current_learning_form.is_empty() {
+            last_learning_form = current_learning_form;
         }
-        let row = read_row_from_worksheet(sheet, &header, y);
-        raw_rows.push(row);
-        y += 1;
+
+        let current_speciality = sheet.get_value((header.speciality_x, y)).trim().to_string();
+        if !current_speciality.is_empty() {
+            last_speciality = current_speciality;
+        }
+
+        let current_course = sheet.get_value((header.course_x, y)).trim().to_string();
+        if !current_course.is_empty() {
+            last_course = current_course;
+        }
+
+        let current_semester = sheet.get_value((header.semester_x, y)).trim().to_string();
+        if !current_semester.is_empty() {
+            last_semester = current_semester;
+        }
+
+        // Only add rows that have a number in the first column and a valid name
+        if let Ok(_row_num) = row_num_val_str.parse::<u32>() {
+            if !name_val.is_empty() && name_val != "4" {
+                let mut row = read_row_from_worksheet(sheet, &header, y);
+                row.learning_form = last_learning_form.clone();
+                row.speciality = last_speciality.clone();
+                row.course = last_course.clone();
+                row.semester = last_semester.clone();
+                raw_rows.push(row);
+            }
+        }
     }
     return raw_rows;
 }

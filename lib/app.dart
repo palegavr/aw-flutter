@@ -1,8 +1,8 @@
 import 'package:aw_flutter/features/archive/presentation/view/archive_entries_screen.dart';
-import 'package:aw_flutter/features/employee/presentation/view/view_employees_screen.dart';
-import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_screen.dart';
-import 'package:aw_flutter/features/workload_distribution/presentation/view/import_screen.dart';
 import 'package:aw_flutter/features/initial/presentation/view/initial_screen.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_screen.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_workload_projects_screen.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/import_screen.dart';
 import 'package:aw_flutter/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -28,8 +28,10 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => const ArchiveEntriesScreen(),
             );
-          case ViewEmployeesScreen.routeName:
-            return MaterialPageRoute(builder: (_) => const ViewEmployeesScreen());
+          case DistributeWorkloadProjectsScreen.routeName:
+            return MaterialPageRoute(
+              builder: (_) => DistributeWorkloadProjectsScreen(),
+            );
         }
         return null;
       },
