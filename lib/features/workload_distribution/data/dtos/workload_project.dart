@@ -159,23 +159,6 @@ extension UniversityForm3DtoX on UniversityForm3Dto {
     }
   }
 
-  void replaceWorkloadItem(
-    UniversityForm3WorkloadItemDto oldItem,
-    UniversityForm3WorkloadItemDto newItem,
-  ) {
-    for (final employee in employees) {
-      for (final rate in employee.rates) {
-        final index = rate.workloadItems.indexWhere(
-          (w) => identical(w, oldItem),
-        );
-        if (index != -1) {
-          rate.workloadItems[index] = newItem;
-          return;
-        }
-      }
-    }
-  }
-
   void addWorkloadItem(
     EmployeeRateDto rate,
     UniversityForm3WorkloadItemDto newItem,
