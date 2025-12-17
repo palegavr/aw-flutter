@@ -981,90 +981,129 @@ DataRow buildForm3DataRowEdit({
   final studentCountController = TextEditingController(
     text: workloadItem.studentCount.toString(),
   );
+  String formatNumber(num value) {
+    if (value == value.toInt()) {
+      return value.toInt().toString();
+    }
+    return value.toString();
+  }
+
   final lecturesController = TextEditingController(
-    text: workloadItem.lectures.toString(),
+    text: formatNumber(workloadItem.lectures),
   );
   final practicesController = TextEditingController(
-    text: workloadItem.practices.toString(),
+    text: formatNumber(workloadItem.practices),
   );
   final labsController = TextEditingController(
-    text: workloadItem.labs.toString(),
+    text: formatNumber(workloadItem.labs),
   );
   final examsController = TextEditingController(
-    text: workloadItem.exams.toString(),
+    text: formatNumber(workloadItem.exams),
   );
   final examConsultsController = TextEditingController(
-    text: workloadItem.examConsults.toString(),
+    text: formatNumber(workloadItem.examConsults),
   );
   final testsController = TextEditingController(
-    text: workloadItem.tests.toString(),
+    text: formatNumber(workloadItem.tests),
   );
   final qualificationWorksController = TextEditingController(
-    text: workloadItem.qualificationWorks.toString(),
+    text: formatNumber(workloadItem.qualificationWorks),
   );
   final certificationExamsController = TextEditingController(
-    text: workloadItem.certificationExams.toString(),
+    text: formatNumber(workloadItem.certificationExams),
   );
   final productionPracticesController = TextEditingController(
-    text: workloadItem.productionPractices.toString(),
+    text: formatNumber(workloadItem.productionPractices),
   );
   final teachingPracticesController = TextEditingController(
-    text: workloadItem.teachingPractices.toString(),
+    text: formatNumber(workloadItem.teachingPractices),
   );
   final currentConsultsController = TextEditingController(
-    text: workloadItem.currentConsults.toString(),
+    text: formatNumber(workloadItem.currentConsults),
   );
   final individualWorksController = TextEditingController(
-    text: workloadItem.individualWorks.toString(),
+    text: formatNumber(workloadItem.individualWorks),
   );
   final courseWorksController = TextEditingController(
-    text: workloadItem.courseWorks.toString(),
+    text: formatNumber(workloadItem.courseWorks),
   );
   final postgraduateExamsController = TextEditingController(
-    text: workloadItem.postgraduateExams.toString(),
+    text: formatNumber(workloadItem.postgraduateExams),
   );
 
   void handleChange() {
     workloadItem.academicGroups =
         academicGroupsController.text.split(",").map((e) => e.trim()).toList();
-    workloadItem.studentCount =
-        int.tryParse(studentCountController.text) ?? workloadItem.studentCount;
-    workloadItem.lectures =
-        double.tryParse(lecturesController.text) ?? workloadItem.lectures;
-    workloadItem.practices =
-        double.tryParse(practicesController.text) ?? workloadItem.practices;
-    workloadItem.labs =
-        double.tryParse(labsController.text) ?? workloadItem.labs;
-    workloadItem.exams =
-        double.tryParse(examsController.text) ?? workloadItem.exams;
-    workloadItem.examConsults =
-        double.tryParse(examConsultsController.text) ??
-        workloadItem.examConsults;
-    workloadItem.tests =
-        double.tryParse(testsController.text) ?? workloadItem.tests;
-    workloadItem.qualificationWorks =
-        double.tryParse(qualificationWorksController.text) ??
-        workloadItem.qualificationWorks;
-    workloadItem.certificationExams =
-        double.tryParse(certificationExamsController.text) ??
-        workloadItem.certificationExams;
-    workloadItem.productionPractices =
-        double.tryParse(productionPracticesController.text) ??
-        workloadItem.productionPractices;
-    workloadItem.teachingPractices =
-        double.tryParse(teachingPracticesController.text) ??
-        workloadItem.teachingPractices;
-    workloadItem.currentConsults =
-        double.tryParse(currentConsultsController.text) ??
-        workloadItem.currentConsults;
-    workloadItem.individualWorks =
-        double.tryParse(individualWorksController.text) ??
-        workloadItem.individualWorks;
-    workloadItem.courseWorks =
-        double.tryParse(courseWorksController.text) ?? workloadItem.courseWorks;
-    workloadItem.postgraduateExams =
-        double.tryParse(postgraduateExamsController.text) ??
-        workloadItem.postgraduateExams;
+    int parseNonNegativeInt(String text, int fallback) {
+      final value = int.tryParse(text);
+      return (value != null && value >= 0) ? value : fallback;
+    }
+
+    double parseNonNegativeDouble(String text, double fallback) {
+      final value = double.tryParse(text);
+      return (value != null && value >= 0) ? value : fallback;
+    }
+
+    workloadItem.studentCount = parseNonNegativeInt(
+      studentCountController.text,
+      workloadItem.studentCount,
+    );
+    workloadItem.lectures = parseNonNegativeDouble(
+      lecturesController.text,
+      workloadItem.lectures,
+    );
+    workloadItem.practices = parseNonNegativeDouble(
+      practicesController.text,
+      workloadItem.practices,
+    );
+    workloadItem.labs = parseNonNegativeDouble(
+      labsController.text,
+      workloadItem.labs,
+    );
+    workloadItem.exams = parseNonNegativeDouble(
+      examsController.text,
+      workloadItem.exams,
+    );
+    workloadItem.examConsults = parseNonNegativeDouble(
+      examConsultsController.text,
+      workloadItem.examConsults,
+    );
+    workloadItem.tests = parseNonNegativeDouble(
+      testsController.text,
+      workloadItem.tests,
+    );
+    workloadItem.qualificationWorks = parseNonNegativeDouble(
+      qualificationWorksController.text,
+      workloadItem.qualificationWorks,
+    );
+    workloadItem.certificationExams = parseNonNegativeDouble(
+      certificationExamsController.text,
+      workloadItem.certificationExams,
+    );
+    workloadItem.productionPractices = parseNonNegativeDouble(
+      productionPracticesController.text,
+      workloadItem.productionPractices,
+    );
+    workloadItem.teachingPractices = parseNonNegativeDouble(
+      teachingPracticesController.text,
+      workloadItem.teachingPractices,
+    );
+    workloadItem.currentConsults = parseNonNegativeDouble(
+      currentConsultsController.text,
+      workloadItem.currentConsults,
+    );
+    workloadItem.individualWorks = parseNonNegativeDouble(
+      individualWorksController.text,
+      workloadItem.individualWorks,
+    );
+    workloadItem.courseWorks = parseNonNegativeDouble(
+      courseWorksController.text,
+      workloadItem.courseWorks,
+    );
+    workloadItem.postgraduateExams = parseNonNegativeDouble(
+      postgraduateExamsController.text,
+      workloadItem.postgraduateExams,
+    );
 
     onUpdate();
   }
@@ -1072,6 +1111,8 @@ DataRow buildForm3DataRowEdit({
   DataCell editableCell(
     TextEditingController controller, {
     bool numeric = false,
+    bool isInteger = false,
+    bool allowNegative = false,
     VoidCallback? onTap,
     bool readOnly = false,
   }) {
@@ -1080,9 +1121,19 @@ DataRow buildForm3DataRowEdit({
         controller: controller,
         readOnly: readOnly,
         onTap: onTap,
-        keyboardType: numeric ? TextInputType.number : TextInputType.text,
+        keyboardType:
+            numeric
+                ? TextInputType.numberWithOptions(
+                  decimal: !isInteger,
+                  signed: allowNegative,
+                )
+                : TextInputType.text,
         decoration: const InputDecoration(border: InputBorder.none),
-        onChanged: (_) => handleChange(),
+        onEditingComplete: handleChange,
+        onTapOutside: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          handleChange();
+        },
       ),
     );
   }
@@ -1114,7 +1165,7 @@ DataRow buildForm3DataRowEdit({
         },
       ),
       DataCell(Text(workloadItem.workloadKey.course)),
-      editableCell(studentCountController, numeric: true),
+      editableCell(studentCountController, numeric: true, isInteger: true),
       editableCell(lecturesController, numeric: true),
       editableCell(practicesController, numeric: true),
       editableCell(labsController, numeric: true),
