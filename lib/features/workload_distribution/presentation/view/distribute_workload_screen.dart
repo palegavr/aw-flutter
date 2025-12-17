@@ -1,6 +1,6 @@
 import 'package:aw_flutter/features/workload_distribution/application/workload_distribution_project_service.dart';
 import 'package:aw_flutter/features/workload_distribution/data/dtos/academic_semester.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/learning_form.dart';
+
 import 'package:aw_flutter/features/workload_distribution/data/dtos/workload_project.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/add_workload_item_dialog.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/employee_form.dart';
@@ -972,9 +972,6 @@ DataRow buildForm3DataRowEdit({
   required void Function(UniversityForm3WorkloadItemDto) onDelete,
   required UniversityForm1Dto form1,
 }) {
-  final courseController = TextEditingController(
-    text: workloadItem.workloadKey.course,
-  );
   final academicGroupsController = TextEditingController(
     text: workloadItem.academicGroups.join(", "),
   );
@@ -1025,7 +1022,6 @@ DataRow buildForm3DataRowEdit({
   );
 
   void handleChange() {
-    workloadItem.workloadKey.course = courseController.text;
     workloadItem.academicGroups =
         academicGroupsController.text.split(",").map((e) => e.trim()).toList();
     workloadItem.studentCount =
@@ -1084,120 +1080,17 @@ DataRow buildForm3DataRowEdit({
     );
   }
 
-  DataCell learningFormCell() {
-    var items =
-        form1.workloadItems
-            .where(
-              (e) =>
-                  e.workloadKey.disciplineName ==
-                  workloadItem.workloadKey.disciplineName,
-            )
-            .map((e) => e.workloadKey.learningForm)
-            .toSet()
-            .toList();
-
-    return DataCell(
-      DropdownButton<LearningForm>(
-        value: workloadItem.workloadKey.learningForm,
-        items:
-            items
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e,
-                    child: Text(e.shortDisplayName),
-                  ),
-                )
-                .toList(),
-        onChanged: (newValue) {
-          if (newValue != null) {
-            workloadItem.workloadKey.learningForm = newValue;
-            workloadItem.workloadKey.specialty = '';
-            onUpdate();
-          }
-        },
-        underline: const SizedBox(),
-      ),
-    );
-  }
-
-  DataCell disciplineNameCell() {
-    var items =
-        form1.workloadItems
-            .map((e) => e.workloadKey.disciplineName)
-            .toSet()
-            .toList();
-    return DataCell(
-      DropdownButton<String>(
-        value:
-            items.contains(workloadItem.workloadKey.disciplineName)
-                ? workloadItem.workloadKey.disciplineName
-                : null,
-        items:
-            items
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-        onChanged: (newValue) {
-          if (newValue != null) {
-            workloadItem.workloadKey.disciplineName = newValue;
-            workloadItem.workloadKey.learningForm = LearningForm.daytime;
-            workloadItem.workloadKey.specialty = '';
-            onUpdate();
-          }
-        },
-        underline: const SizedBox(),
-      ),
-    );
-  }
-
-  DataCell specialityCell() {
-    var items =
-        form1.workloadItems
-            .where(
-              (e) =>
-                  e.workloadKey.disciplineName ==
-                  workloadItem.workloadKey.disciplineName,
-            )
-            .where(
-              (e) =>
-                  e.workloadKey.learningForm ==
-                  workloadItem.workloadKey.learningForm,
-            )
-            .map((e) => e.workloadKey.specialty)
-            .toSet()
-            .toList();
-
-    return DataCell(
-      DropdownButton<String>(
-        value:
-            items.contains(workloadItem.workloadKey.specialty)
-                ? workloadItem.workloadKey.specialty
-                : null,
-        items:
-            items
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-        onChanged: (newValue) {
-          if (newValue != null) {
-            workloadItem.workloadKey.specialty = newValue;
-            onUpdate();
-          }
-        },
-        underline: const SizedBox(),
-      ),
-    );
-  }
-
   return DataRow(
     color:
         workloadItem.workloadKey.semester == AcademicSemester.first
             ? MaterialStateProperty.all(Colors.grey[100])
             : MaterialStateProperty.all(Colors.grey[200]),
     cells: [
-      disciplineNameCell(),
-      learningFormCell(),
-      specialityCell(),
+      DataCell(Text(workloadItem.workloadKey.disciplineName)),
+      DataCell(Text(workloadItem.workloadKey.learningForm.shortDisplayName)),
+      DataCell(Text(workloadItem.workloadKey.specialty)),
       editableCell(academicGroupsController),
-      editableCell(courseController),
+      DataCell(Text(workloadItem.workloadKey.course)),
       editableCell(studentCountController, numeric: true),
       editableCell(lecturesController, numeric: true),
       editableCell(practicesController, numeric: true),
