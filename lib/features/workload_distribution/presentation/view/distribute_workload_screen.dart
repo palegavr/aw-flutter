@@ -4,6 +4,7 @@ import 'package:aw_flutter/features/workload_distribution/data/dtos/academic_sem
 import 'package:aw_flutter/features/workload_distribution/data/dtos/workload_project.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/add_workload_item_dialog.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/employee_form.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/group_editor_dialog.dart';
 import 'package:aw_flutter/shared/date_time_extension.dart';
 import 'package:aw_flutter/src/rust/api/excel_interface.dart';
 import 'package:file_picker/file_picker.dart';
@@ -856,6 +857,7 @@ class _Form3Editor extends StatelessWidget {
                                                           workloadItem,
                                                         ) {
                                                           return buildForm3DataRowEdit(
+                                                            context: context,
                                                             workloadItem:
                                                                 workloadItem,
                                                             onUpdate: () {
@@ -967,6 +969,7 @@ DataRow buildForm3DataRowView(
 }
 
 DataRow buildForm3DataRowEdit({
+  required BuildContext context,
   required UniversityForm3WorkloadItemDto workloadItem,
   required VoidCallback onUpdate,
   required void Function(UniversityForm3WorkloadItemDto) onDelete,
@@ -1069,10 +1072,14 @@ DataRow buildForm3DataRowEdit({
   DataCell editableCell(
     TextEditingController controller, {
     bool numeric = false,
+    VoidCallback? onTap,
+    bool readOnly = false,
   }) {
     return DataCell(
       TextField(
         controller: controller,
+        readOnly: readOnly,
+        onTap: onTap,
         keyboardType: numeric ? TextInputType.number : TextInputType.text,
         decoration: const InputDecoration(border: InputBorder.none),
         onChanged: (_) => handleChange(),
@@ -1089,7 +1096,23 @@ DataRow buildForm3DataRowEdit({
       DataCell(Text(workloadItem.workloadKey.disciplineName)),
       DataCell(Text(workloadItem.workloadKey.learningForm.shortDisplayName)),
       DataCell(Text(workloadItem.workloadKey.specialty)),
-      editableCell(academicGroupsController),
+      editableCell(
+        academicGroupsController,
+        readOnly: true,
+        onTap: () {
+          showDialog(
+            context: context,
+            builder:
+                (context) => GroupEditorDialog(
+                  initialGroups: workloadItem.academicGroups,
+                  onSave: (newGroups) {
+                    academicGroupsController.text = newGroups.join(", ");
+                    handleChange();
+                  },
+                ),
+          );
+        },
+      ),
       DataCell(Text(workloadItem.workloadKey.course)),
       editableCell(studentCountController, numeric: true),
       editableCell(lecturesController, numeric: true),
