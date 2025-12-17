@@ -257,7 +257,7 @@ class _AddWorkloadItemDialogState extends State<AddWorkloadItemDialog> {
                     final newItem =
                         UniversityForm3WorkloadItemDto.empty()
                           ..workloadKey = key
-                          ..studentCount = form1Item.studentCount
+                          ..studentCount = isUsed ? 0 : form1Item.studentCount
                           ..lectures = isUsed ? 0 : form1Item.lecturesPlanned
                           ..exams = isUsed ? 0 : form1Item.exams
                           ..tests = isUsed ? 0 : form1Item.tests
