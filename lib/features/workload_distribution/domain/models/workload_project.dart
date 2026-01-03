@@ -4,37 +4,57 @@ import 'package:aw_flutter/features/workload_distribution/domain/models/academic
 import 'package:aw_flutter/features/workload_distribution/domain/models/learning_form.dart';
 import 'package:aw_flutter/src/rust/excel/data.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 part 'workload_project.freezed.dart';
 part 'workload_project.g.dart';
 
-@unfreezed
-abstract class WorkloadDistributionProject with _$WorkloadDistributionProject {
-  const WorkloadDistributionProject._();
+@JsonSerializable(explicitToJson: true)
+class WorkloadDistributionProject {
+  final int id;
+  String _title;
+  UniversityForm1 _universityForm1;
+  UniversityForm3 _universityForm3;
+  final DateTime createdAt;
+  DateTime _updatedAt;
 
-  factory WorkloadDistributionProject({
-    required int id,
+  WorkloadDistributionProject({
+    required this.id,
     required String title,
     required UniversityForm1 universityForm1,
     required UniversityForm3 universityForm3,
-    required DateTime createdAt,
+    required this.createdAt,
     required DateTime updatedAt,
-  }) = _WorkloadDistributionProject;
+  }) : _title = title,
+       _universityForm1 = universityForm1,
+       _universityForm3 = universityForm3,
+       _updatedAt = updatedAt;
+
+  String get title => _title;
+  UniversityForm1 get universityForm1 => _universityForm1;
+  UniversityForm3 get universityForm3 => _universityForm3;
+  DateTime get updatedAt => _updatedAt;
 
   factory WorkloadDistributionProject.fromJson(Map<String, dynamic> json) =>
       _$WorkloadDistributionProjectFromJson(json);
 
+  Map<String, dynamic> toJson() => _$WorkloadDistributionProjectToJson(this);
+
   factory WorkloadDistributionProject.fromTableData(
     WorkloadDistributionProjectData data,
   ) {
-    return WorkloadDistributionProject.fromJson({
-      'id': data.id,
-      'title': data.title,
-      'universityForm1': jsonDecode(data.universityForm1Json),
-      'universityForm3': jsonDecode(data.universityForm3Json),
-      'createdAt': data.createdAt.toIso8601String(),
-      'updatedAt': data.updatedAt.toIso8601String(),
-    });
+    return WorkloadDistributionProject(
+      id: data.id,
+      title: data.title,
+      universityForm1: UniversityForm1.fromJson(
+        jsonDecode(data.universityForm1Json) as Map<String, dynamic>,
+      ),
+      universityForm3: UniversityForm3.fromJson(
+        jsonDecode(data.universityForm3Json) as Map<String, dynamic>,
+      ),
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    );
   }
 
   @override
@@ -48,18 +68,18 @@ abstract class WorkloadDistributionProject with _$WorkloadDistributionProject {
   int get hashCode => id.hashCode;
 
   void changeTitle(String newTitle) {
-    title = newTitle;
-    updatedAt = DateTime.now();
+    _title = newTitle;
+    _updatedAt = DateTime.now();
   }
 
   void updateForm1(UniversityForm1 form1) {
-    universityForm1 = form1;
-    updatedAt = DateTime.now();
+    _universityForm1 = form1;
+    _updatedAt = DateTime.now();
   }
 
   void updateForm3(UniversityForm3 form3) {
-    universityForm3 = form3;
-    updatedAt = DateTime.now();
+    _universityForm3 = form3;
+    _updatedAt = DateTime.now();
   }
 }
 
