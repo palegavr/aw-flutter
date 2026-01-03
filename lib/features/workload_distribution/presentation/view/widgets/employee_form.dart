@@ -1,8 +1,8 @@
-import 'package:aw_flutter/features/workload_distribution/data/dtos/workload_project.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
 import 'package:flutter/material.dart';
 
 class EmployeeForm extends StatefulWidget {
-  final void Function(EmployeeDto) onSubmit;
+  final void Function(Employee) onSubmit;
   final bool withSubmitButton;
   final int academicYear;
 
@@ -72,13 +72,13 @@ class EmployeeFormState extends State<EmployeeForm> {
         dateEnd = _dateEnd!;
       }
 
-      final employee = EmployeeDto(
+      final employee = Employee(
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
         patronymic: _patronymicController.text,
         rank: _selectedRank!,
         rates: [
-          EmployeeRateDto(
+          EmployeeRate(
             rateValue: rateValue,
             dateStart: dateStart,
             dateEnd: dateEnd,

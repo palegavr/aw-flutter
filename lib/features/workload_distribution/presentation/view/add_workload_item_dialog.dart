@@ -1,12 +1,12 @@
-import 'package:aw_flutter/features/workload_distribution/data/dtos/academic_semester.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/learning_form.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/workload_project.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/academic_semester.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/learning_form.dart';
 import 'package:flutter/material.dart';
 
 class AddWorkloadItemDialog extends StatefulWidget {
-  final UniversityForm1Dto universityForm1;
-  final UniversityForm3Dto universityForm3;
-  final void Function(UniversityForm3WorkloadItemDto) onAdd;
+  final UniversityForm1 universityForm1;
+  final UniversityForm3 universityForm3;
+  final void Function(UniversityForm3WorkloadItem) onAdd;
 
   const AddWorkloadItemDialog({
     required this.universityForm1,
@@ -25,7 +25,7 @@ class _AddWorkloadItemDialogState extends State<AddWorkloadItemDialog> {
   String? _selectedCourse;
   AcademicSemester? _selectedSemester;
 
-  List<UniversityForm1WorkloadItemDto> get _availableItems {
+  List<UniversityForm1WorkloadItem> get _availableItems {
     return widget.universityForm1.workloadItems;
   }
 
@@ -222,7 +222,7 @@ class _AddWorkloadItemDialogState extends State<AddWorkloadItemDialog> {
           onPressed:
               _isValid
                   ? () {
-                    final key = WorkloadKeyDto(
+                    final key = WorkloadKey(
                       disciplineName: _selectedDiscipline!,
                       learningForm: _selectedLearningForm!,
                       specialty: _selectedSpecialty!,
@@ -254,16 +254,17 @@ class _AddWorkloadItemDialogState extends State<AddWorkloadItemDialog> {
                       if (isUsed) break;
                     }
 
-                    final newItem =
-                        UniversityForm3WorkloadItemDto.empty()
-                          ..workloadKey = key
-                          ..studentCount = isUsed ? 0 : form1Item.studentCount
-                          ..lectures = isUsed ? 0 : form1Item.lecturesPlanned
-                          ..exams = isUsed ? 0 : form1Item.exams
-                          ..tests = isUsed ? 0 : form1Item.tests
-                          ..currentConsults =
-                              isUsed ? 0 : form1Item.currentConsults
-                          ..examConsults = isUsed ? 0 : form1Item.examConsults;
+                    final newItem = UniversityForm3WorkloadItem.empty()
+                        .copyWith(
+                          workloadKey: key,
+                          studentCount: isUsed ? 0 : form1Item.studentCount,
+                          lectures: isUsed ? 0 : form1Item.lecturesPlanned,
+                          exams: isUsed ? 0 : form1Item.exams,
+                          tests: isUsed ? 0 : form1Item.tests,
+                          currentConsults:
+                              isUsed ? 0 : form1Item.currentConsults,
+                          examConsults: isUsed ? 0 : form1Item.examConsults,
+                        );
 
                     widget.onAdd(newItem);
                     Navigator.of(context).pop();

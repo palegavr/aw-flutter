@@ -1,5 +1,5 @@
 import 'package:aw_flutter/features/workload_distribution/application/workload_distribution_project_service.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/workload_project.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_workload_screen.dart';
 import 'package:aw_flutter/shared/date_time_extension.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ class DistributeWorkloadProjectsScreen extends StatefulWidget {
 class _DistributeWorkloadProjectsScreenState
     extends State<DistributeWorkloadProjectsScreen> {
   final _service = WorkloadDistributionProjectService();
-  List<WorkloadDistributionProjectDto> _projects = [];
+  List<WorkloadDistributionProject> _projects = [];
 
   bool _isLoading = true;
 
@@ -29,7 +29,7 @@ class _DistributeWorkloadProjectsScreenState
   }
 
   void _openCreateDialog() async {
-    final result = await showDialog<WorkloadDistributionProjectDto>(
+    final result = await showDialog<WorkloadDistributionProject>(
       context: context,
       builder: (context) => _CreateProjectDialog(service: _service),
     );
@@ -39,7 +39,7 @@ class _DistributeWorkloadProjectsScreenState
     }
   }
 
-  void _setProjects(List<WorkloadDistributionProjectDto> projects) {
+  void _setProjects(List<WorkloadDistributionProject> projects) {
     setState(() {
       this._projects = projects;
       _isLoading = false;
@@ -169,16 +169,16 @@ class _CreateProjectDialogState extends State<_CreateProjectDialog> {
     if (_formKey.currentState!.validate()) {
       final int projectId = await widget._service.create(
         title: _titleController.text,
-        universityForm1: UniversityForm1Dto(
+        universityForm1: UniversityForm1(
           academicYear: DateTime.now().year,
           workloadItems: [],
         ),
-        universityForm3: UniversityForm3Dto(
+        universityForm3: UniversityForm3(
           academicYear: DateTime.now().year,
           employees: [],
         ),
       );
-      final WorkloadDistributionProjectDto project =
+      final WorkloadDistributionProject project =
           (await widget._service.getById(projectId))!;
       Navigator.of(context).pop(project);
     }

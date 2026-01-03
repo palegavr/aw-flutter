@@ -1,8 +1,7 @@
 import 'dart:convert';
-
 import 'package:aw_flutter/database/app_database.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/academic_semester.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/learning_form.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/academic_semester.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/learning_form.dart';
 import 'package:aw_flutter/src/rust/excel/data.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -11,6 +10,8 @@ part 'workload_project.g.dart';
 
 @unfreezed
 abstract class WorkloadDistributionProject with _$WorkloadDistributionProject {
+  const WorkloadDistributionProject._();
+
   factory WorkloadDistributionProject({
     required int id,
     required String title,
@@ -26,24 +27,45 @@ abstract class WorkloadDistributionProject with _$WorkloadDistributionProject {
   factory WorkloadDistributionProject.fromTableData(
     WorkloadDistributionProjectData data,
   ) {
-    return WorkloadDistributionProject(
-      id: data.id,
-      title: data.title,
-      universityForm1: UniversityForm1.fromJson(
-        jsonDecode(data.universityForm1Json),
-      ),
-      universityForm3: UniversityForm3.fromJson(
-        jsonDecode(data.universityForm3Json),
-      ),
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
-    );
+    return WorkloadDistributionProject.fromJson({
+      'id': data.id,
+      'title': data.title,
+      'universityForm1': jsonDecode(data.universityForm1Json),
+      'universityForm3': jsonDecode(data.universityForm3Json),
+      'createdAt': data.createdAt.toIso8601String(),
+      'updatedAt': data.updatedAt.toIso8601String(),
+    });
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkloadDistributionProject &&
+          runtimeType == other.runtimeType &&
+          id == other.id);
+
+  @override
+  int get hashCode => id.hashCode;
+
+  void changeTitle(String newTitle) {
+    title = newTitle;
+    updatedAt = DateTime.now();
+  }
+
+  void updateForm1(UniversityForm1 form1) {
+    universityForm1 = form1;
+    updatedAt = DateTime.now();
+  }
+
+  void updateForm3(UniversityForm3 form3) {
+    universityForm3 = form3;
+    updatedAt = DateTime.now();
   }
 }
 
-@unfreezed
+@freezed
 abstract class UniversityForm1 with _$UniversityForm1 {
-  factory UniversityForm1({
+  const factory UniversityForm1({
     required int academicYear,
     required List<UniversityForm1WorkloadItem> workloadItems,
   }) = _UniversityForm1;
@@ -51,7 +73,7 @@ abstract class UniversityForm1 with _$UniversityForm1 {
   factory UniversityForm1.fromJson(Map<String, dynamic> json) =>
       _$UniversityForm1FromJson(json);
 
-  factory UniversityForm1.fromParsedExcelFile({
+  static UniversityForm1 fromParsedExcelFile({
     required ParsedExcelFile file,
     required String sheetName,
     required int academicYear,
@@ -107,8 +129,6 @@ abstract class UniversityForm1 with _$UniversityForm1 {
 
   static double _parseDouble(String value) {
     if (value.isEmpty) return 0.0;
-
-    // Handle fractions like "1/2", "1/1.0"
     if (value.contains('/')) {
       final parts = value.split('/');
       if (parts.length == 2) {
@@ -118,7 +138,6 @@ abstract class UniversityForm1 with _$UniversityForm1 {
         return numerator / denominator;
       }
     }
-
     return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
   }
 
@@ -135,37 +154,40 @@ abstract class UniversityForm1 with _$UniversityForm1 {
   }
 }
 
-@unfreezed
+@freezed
 abstract class UniversityForm3 with _$UniversityForm3 {
-  factory UniversityForm3({
+  const UniversityForm3._();
+
+  const factory UniversityForm3({
     required int academicYear,
     required List<Employee> employees,
   }) = _UniversityForm3;
 
   factory UniversityForm3.fromJson(Map<String, dynamic> json) =>
       _$UniversityForm3FromJson(json);
+
+  UniversityForm3 addEmployee(Employee newEmployee) {
+    return copyWith(employees: [...this.employees, newEmployee]);
+  }
+
+  UniversityForm3 replaceEmployee(Employee oldEmployee, Employee newEmployee) {
+    final index = this.employees.indexOf(oldEmployee);
+    if (index == -1) return this;
+    final newEmployees = List<Employee>.from(this.employees);
+    newEmployees[index] = newEmployee;
+    return copyWith(employees: newEmployees);
+  }
+
+  UniversityForm3 removeEmployee(Employee employee) {
+    return copyWith(
+      employees: this.employees.where((e) => e != employee).toList(),
+    );
+  }
 }
 
-extension UniversityForm3X on UniversityForm3 {
-  void addEmployee(Employee newEmployee) {
-    employees.add(newEmployee);
-  }
-
-  void replaceEmployee(Employee oldEmployee, Employee newEmployee) {
-    final index = employees.indexOf(oldEmployee);
-    if (index != -1) {
-      employees[index] = newEmployee;
-    }
-  }
-
-  void addWorkloadItem(EmployeeRate rate, UniversityForm3WorkloadItem newItem) {
-    rate.workloadItems.add(newItem);
-  }
-}
-
-@unfreezed
+@freezed
 abstract class UniversityForm1WorkloadItem with _$UniversityForm1WorkloadItem {
-  factory UniversityForm1WorkloadItem({
+  const factory UniversityForm1WorkloadItem({
     required WorkloadKey workloadKey,
     required double weekCount,
     required int studentCount,
@@ -195,13 +217,9 @@ abstract class UniversityForm1WorkloadItem with _$UniversityForm1WorkloadItem {
       _$UniversityForm1WorkloadItemFromJson(json);
 }
 
-@Freezed(
-  equal: true,
-  makeCollectionsUnmodifiable: false,
-  addImplicitFinal: false,
-)
+@freezed
 abstract class WorkloadKey with _$WorkloadKey {
-  factory WorkloadKey({
+  const factory WorkloadKey({
     required LearningForm learningForm,
     required String specialty,
     required String disciplineName,
@@ -225,9 +243,11 @@ enum EmployeeRank {
   const EmployeeRank(this.displayName);
 }
 
-@unfreezed
+@freezed
 abstract class Employee with _$Employee {
-  factory Employee({
+  const Employee._();
+
+  const factory Employee({
     required String firstName,
     required String lastName,
     required String patronymic,
@@ -237,16 +257,35 @@ abstract class Employee with _$Employee {
 
   factory Employee.fromJson(Map<String, dynamic> json) =>
       _$EmployeeFromJson(json);
-}
 
-extension EmployeeX on Employee {
   String get fullName =>
-      '${this.firstName} ${this.lastName}${this.patronymic.isNotEmpty ? ' ' + this.patronymic : ''}';
+      '$firstName $lastName${patronymic.isNotEmpty ? ' $patronymic' : ''}';
+
+  Employee addWorkloadItem(
+    EmployeeRate rate,
+    UniversityForm3WorkloadItem newItem,
+  ) {
+    final index = rates.indexOf(rate);
+    if (index == -1) return this;
+    final newRates = List<EmployeeRate>.from(rates);
+    newRates[index] = rate.addWorkloadItem(newItem);
+    return copyWith(rates: newRates);
+  }
+
+  Employee replaceRate(EmployeeRate oldRate, EmployeeRate newRate) {
+    final index = rates.indexOf(oldRate);
+    if (index == -1) return this;
+    final newRates = List<EmployeeRate>.from(rates);
+    newRates[index] = newRate;
+    return copyWith(rates: newRates);
+  }
 }
 
-@unfreezed
+@freezed
 abstract class EmployeeRate with _$EmployeeRate {
-  factory EmployeeRate({
+  const EmployeeRate._();
+
+  const factory EmployeeRate({
     required double rateValue,
     required DateTime dateStart,
     required DateTime dateEnd,
@@ -256,11 +295,32 @@ abstract class EmployeeRate with _$EmployeeRate {
 
   factory EmployeeRate.fromJson(Map<String, dynamic> json) =>
       _$EmployeeRateFromJson(json);
+
+  EmployeeRate addWorkloadItem(UniversityForm3WorkloadItem newItem) {
+    return copyWith(workloadItems: [...workloadItems, newItem]);
+  }
+
+  EmployeeRate replaceWorkloadItem(
+    UniversityForm3WorkloadItem oldItem,
+    UniversityForm3WorkloadItem newItem,
+  ) {
+    final index = workloadItems.indexOf(oldItem);
+    if (index == -1) return this;
+    final newItems = List<UniversityForm3WorkloadItem>.from(workloadItems);
+    newItems[index] = newItem;
+    return copyWith(workloadItems: newItems);
+  }
+
+  EmployeeRate removeWorkloadItem(UniversityForm3WorkloadItem item) {
+    return copyWith(
+      workloadItems: workloadItems.where((i) => i != item).toList(),
+    );
+  }
 }
 
-@unfreezed
+@freezed
 abstract class UniversityForm3WorkloadItem with _$UniversityForm3WorkloadItem {
-  factory UniversityForm3WorkloadItem({
+  const factory UniversityForm3WorkloadItem({
     required WorkloadKey workloadKey,
     required int studentCount,
     required List<String> academicGroups,

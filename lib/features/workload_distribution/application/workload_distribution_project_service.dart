@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:aw_flutter/database/app_database.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/workload_project.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
 import 'package:drift/drift.dart';
 
 class WorkloadDistributionProjectService {
@@ -18,8 +18,8 @@ class WorkloadDistributionProjectService {
 
   Future<int> create({
     required String title,
-    required UniversityForm1Dto universityForm1,
-    required UniversityForm3Dto universityForm3,
+    required UniversityForm1 universityForm1,
+    required UniversityForm3 universityForm3,
   }) async {
     final now = DateTime.now();
 
@@ -36,32 +36,36 @@ class WorkloadDistributionProjectService {
         );
   }
 
-  Future<List<WorkloadDistributionProjectDto>> getAll() async {
+  Future<List<WorkloadDistributionProject>> getAll() async {
     return (await _db.select(_db.workloadDistributionProject).get())
-        .map((e) => WorkloadDistributionProjectDto.fromTableData(e))
+        .map((e) => WorkloadDistributionProject.fromTableData(e))
         .toList();
   }
 
-  Future<WorkloadDistributionProjectDto?> getById(int id) async {
+  Future<WorkloadDistributionProject?> getById(int id) async {
     var data =
         await (_db.select(_db.workloadDistributionProject)
           ..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
 
     if (data == null) return null;
 
-    return WorkloadDistributionProjectDto.fromTableData(data);
+    return WorkloadDistributionProject.fromTableData(data);
   }
 
-  Future<bool> update(WorkloadDistributionProjectDto dto) async {
+  Future<bool> update(WorkloadDistributionProject aggregate) async {
     final updated = WorkloadDistributionProjectCompanion(
-      title: Value(dto.title),
-      universityForm1Json: Value(jsonEncode(dto.universityForm1.toJson())),
-      universityForm3Json: Value(jsonEncode(dto.universityForm3.toJson())),
+      title: Value(aggregate.title),
+      universityForm1Json: Value(
+        jsonEncode(aggregate.universityForm1.toJson()),
+      ),
+      universityForm3Json: Value(
+        jsonEncode(aggregate.universityForm3.toJson()),
+      ),
       updatedAt: Value(DateTime.now()),
     );
 
     final count = await (_db.update(_db.workloadDistributionProject)
-      ..where((tbl) => tbl.id.equals(dto.id))).write(updated);
+      ..where((tbl) => tbl.id.equals(aggregate.id))).write(updated);
 
     return count > 0;
   }
@@ -69,7 +73,8 @@ class WorkloadDistributionProjectService {
   Future<bool> setTitle(int projectId, String newTitle) async {
     final project = await getById(projectId);
     if (project == null) return false;
-    project.title = newTitle;
+
+    project.changeTitle(newTitle);
     return await update(project);
   }
 

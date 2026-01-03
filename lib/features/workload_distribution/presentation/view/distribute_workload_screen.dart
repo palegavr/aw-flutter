@@ -1,7 +1,7 @@
 import 'package:aw_flutter/features/workload_distribution/application/workload_distribution_project_service.dart';
-import 'package:aw_flutter/features/workload_distribution/data/dtos/academic_semester.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/academic_semester.dart';
 
-import 'package:aw_flutter/features/workload_distribution/data/dtos/workload_project.dart';
+import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/add_workload_item_dialog.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/employee_form.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/group_editor_dialog.dart';
@@ -27,7 +27,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
   final _workloadDistributionProjectService =
       WorkloadDistributionProjectService();
 
-  late WorkloadDistributionProjectDto _project;
+  late WorkloadDistributionProject _project;
   bool _projectLoaded = false;
   DisplayMode _displayMode = DisplayMode.form1;
 
@@ -68,7 +68,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
   }
 
   Future<void> _refreshProject() async {
-    final WorkloadDistributionProjectDto project =
+    final WorkloadDistributionProject project =
         (await _workloadDistributionProjectService.getById(widget.projectId))!;
     setState(() {
       _project = project;
@@ -96,8 +96,8 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
     _setProjectTitleEditing(!_projectTitleEditing);
   }
 
-  void _setUniversityForm3(UniversityForm3Dto form3) async {
-    _project.universityForm3 = form3;
+  void _setUniversityForm3(UniversityForm3 form3) async {
+    _project.updateForm3(form3);
     await _workloadDistributionProjectService.update(_project);
     await _refreshProject();
   }
@@ -174,7 +174,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                                 ? null
                                 : () async {
                                   final newForm1 =
-                                      UniversityForm1Dto.fromParsedExcelFile(
+                                      UniversityForm1.fromParsedExcelFile(
                                         file: parsedFile,
                                         sheetName: selectedSheet!,
                                         academicYear:
@@ -183,7 +183,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                                                 .academicYear,
                                       );
 
-                                  _project.universityForm1 = newForm1;
+                                  _project.updateForm1(newForm1);
                                   await _workloadDistributionProjectService
                                       .update(_project);
                                   await _refreshProject();
@@ -286,9 +286,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                               ? _Form3Editor(
                                 universityForm1: _project.universityForm1,
                                 universityForm3: _project.universityForm3,
-                                onChange: (
-                                  UniversityForm3Dto newUniversityForm3,
-                                ) {
+                                onChange: (UniversityForm3 newUniversityForm3) {
                                   _setUniversityForm3(newUniversityForm3);
                                 },
                               )
@@ -304,7 +302,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
 enum DisplayMode { form1, form3 }
 
 class _Form1Table extends StatelessWidget {
-  final UniversityForm1Dto universityForm1;
+  final UniversityForm1 universityForm1;
 
   const _Form1Table({super.key, required this.universityForm1});
 
@@ -526,10 +524,10 @@ class _Form1Table extends StatelessWidget {
 }
 
 class _Form3Editor extends StatelessWidget {
-  final UniversityForm1Dto universityForm1;
-  final UniversityForm3Dto universityForm3;
+  final UniversityForm1 universityForm1;
+  final UniversityForm3 universityForm3;
 
-  final void Function(UniversityForm3Dto) onChange;
+  final void Function(UniversityForm3) onChange;
 
   _Form3Editor({
     super.key,
@@ -551,8 +549,8 @@ class _Form3Editor extends StatelessWidget {
               EmployeeForm(
                 academicYear: universityForm1.academicYear,
                 onSubmit: (employee) {
-                  universityForm3.addEmployee(employee);
-                  onChange(universityForm3);
+                  final newForm3 = universityForm3.addEmployee(employee);
+                  onChange(newForm3);
                 },
               ),
             ],
@@ -576,8 +574,8 @@ class _Form3Editor extends StatelessWidget {
                     academicYear: universityForm1.academicYear,
                     withSubmitButton: false,
                     onSubmit: (employee) {
-                      universityForm3.addEmployee(employee);
-                      onChange(universityForm3);
+                      final newForm3 = universityForm3.addEmployee(employee);
+                      onChange(newForm3);
                     },
                   ),
                   actions: [
@@ -644,10 +642,9 @@ class _Form3Editor extends StatelessWidget {
                                           ),
                                           TextButton(
                                             onPressed: () {
-                                              universityForm3.employees.remove(
-                                                employee,
-                                              );
-                                              onChange(universityForm3);
+                                              final newForm3 = universityForm3
+                                                  .removeEmployee(employee);
+                                              onChange(newForm3);
                                               Navigator.of(context).pop();
                                             },
                                             child: const Text('Видалити'),
@@ -860,20 +857,51 @@ class _Form3Editor extends StatelessWidget {
                                                             context: context,
                                                             workloadItem:
                                                                 workloadItem,
-                                                            onUpdate: () {
+                                                            onUpdate: (
+                                                              newItem,
+                                                            ) {
+                                                              final newRate = rate
+                                                                  .replaceWorkloadItem(
+                                                                    workloadItem,
+                                                                    newItem,
+                                                                  );
+                                                              final newEmployee =
+                                                                  employee
+                                                                      .replaceRate(
+                                                                        rate,
+                                                                        newRate,
+                                                                      );
+                                                              final newForm3 =
+                                                                  universityForm3
+                                                                      .replaceEmployee(
+                                                                        employee,
+                                                                        newEmployee,
+                                                                      );
                                                               onChange(
-                                                                universityForm3,
+                                                                newForm3,
                                                               );
                                                             },
                                                             onDelete: (
                                                               itemToDelete,
                                                             ) {
-                                                              rate.workloadItems
-                                                                  .remove(
+                                                              final newRate = rate
+                                                                  .removeWorkloadItem(
                                                                     itemToDelete,
                                                                   );
+                                                              final newEmployee =
+                                                                  employee
+                                                                      .replaceRate(
+                                                                        rate,
+                                                                        newRate,
+                                                                      );
+                                                              final newForm3 =
+                                                                  universityForm3
+                                                                      .replaceEmployee(
+                                                                        employee,
+                                                                        newEmployee,
+                                                                      );
                                                               onChange(
-                                                                universityForm3,
+                                                                newForm3,
                                                               );
                                                             },
                                                             form1:
@@ -896,14 +924,19 @@ class _Form3Editor extends StatelessWidget {
                                                           universityForm3:
                                                               universityForm3,
                                                           onAdd: (newItem) {
-                                                            universityForm3
-                                                                .addWorkloadItem(
-                                                                  rate,
-                                                                  newItem,
-                                                                );
-                                                            onChange(
-                                                              universityForm3,
-                                                            );
+                                                            final newEmployee =
+                                                                employee
+                                                                    .addWorkloadItem(
+                                                                      rate,
+                                                                      newItem,
+                                                                    );
+                                                            final newForm3 =
+                                                                universityForm3
+                                                                    .replaceEmployee(
+                                                                      employee,
+                                                                      newEmployee,
+                                                                    );
+                                                            onChange(newForm3);
                                                           },
                                                         ),
                                                   );
@@ -935,8 +968,8 @@ class _Form3Editor extends StatelessWidget {
 }
 
 DataRow buildForm3DataRowView(
-  UniversityForm1Dto universityForm1,
-  UniversityForm3WorkloadItemDto workloadItem,
+  UniversityForm1 universityForm1,
+  UniversityForm3WorkloadItem workloadItem,
 ) {
   return DataRow(
     color:
@@ -970,10 +1003,10 @@ DataRow buildForm3DataRowView(
 
 DataRow buildForm3DataRowEdit({
   required BuildContext context,
-  required UniversityForm3WorkloadItemDto workloadItem,
-  required VoidCallback onUpdate,
-  required void Function(UniversityForm3WorkloadItemDto) onDelete,
-  required UniversityForm1Dto form1,
+  required UniversityForm3WorkloadItem workloadItem,
+  required void Function(UniversityForm3WorkloadItem) onUpdate,
+  required void Function(UniversityForm3WorkloadItem) onDelete,
+  required UniversityForm1 form1,
 }) {
   final academicGroupsController = TextEditingController(
     text: workloadItem.academicGroups.join(", "),
@@ -1031,81 +1064,78 @@ DataRow buildForm3DataRowEdit({
     text: formatNumber(workloadItem.postgraduateExams),
   );
 
+  int parseNonNegativeInt(String text, int fallback) {
+    final value = int.tryParse(text);
+    return (value != null && value >= 0) ? value : fallback;
+  }
+
+  double parseNonNegativeDouble(String text, double fallback) {
+    final value = double.tryParse(text);
+    return (value != null && value >= 0) ? value : fallback;
+  }
+
   void handleChange() {
-    workloadItem.academicGroups =
-        academicGroupsController.text.split(",").map((e) => e.trim()).toList();
-    int parseNonNegativeInt(String text, int fallback) {
-      final value = int.tryParse(text);
-      return (value != null && value >= 0) ? value : fallback;
-    }
-
-    double parseNonNegativeDouble(String text, double fallback) {
-      final value = double.tryParse(text);
-      return (value != null && value >= 0) ? value : fallback;
-    }
-
-    workloadItem.studentCount = parseNonNegativeInt(
-      studentCountController.text,
-      workloadItem.studentCount,
-    );
-    workloadItem.lectures = parseNonNegativeDouble(
-      lecturesController.text,
-      workloadItem.lectures,
-    );
-    workloadItem.practices = parseNonNegativeDouble(
-      practicesController.text,
-      workloadItem.practices,
-    );
-    workloadItem.labs = parseNonNegativeDouble(
-      labsController.text,
-      workloadItem.labs,
-    );
-    workloadItem.exams = parseNonNegativeDouble(
-      examsController.text,
-      workloadItem.exams,
-    );
-    workloadItem.examConsults = parseNonNegativeDouble(
-      examConsultsController.text,
-      workloadItem.examConsults,
-    );
-    workloadItem.tests = parseNonNegativeDouble(
-      testsController.text,
-      workloadItem.tests,
-    );
-    workloadItem.qualificationWorks = parseNonNegativeDouble(
-      qualificationWorksController.text,
-      workloadItem.qualificationWorks,
-    );
-    workloadItem.certificationExams = parseNonNegativeDouble(
-      certificationExamsController.text,
-      workloadItem.certificationExams,
-    );
-    workloadItem.productionPractices = parseNonNegativeDouble(
-      productionPracticesController.text,
-      workloadItem.productionPractices,
-    );
-    workloadItem.teachingPractices = parseNonNegativeDouble(
-      teachingPracticesController.text,
-      workloadItem.teachingPractices,
-    );
-    workloadItem.currentConsults = parseNonNegativeDouble(
-      currentConsultsController.text,
-      workloadItem.currentConsults,
-    );
-    workloadItem.individualWorks = parseNonNegativeDouble(
-      individualWorksController.text,
-      workloadItem.individualWorks,
-    );
-    workloadItem.courseWorks = parseNonNegativeDouble(
-      courseWorksController.text,
-      workloadItem.courseWorks,
-    );
-    workloadItem.postgraduateExams = parseNonNegativeDouble(
-      postgraduateExamsController.text,
-      workloadItem.postgraduateExams,
+    final newItem = workloadItem.copyWith(
+      academicGroups:
+          academicGroupsController.text
+              .split(",")
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
+      studentCount: parseNonNegativeInt(
+        studentCountController.text,
+        workloadItem.studentCount,
+      ),
+      lectures: parseNonNegativeDouble(
+        lecturesController.text,
+        workloadItem.lectures,
+      ),
+      practices: parseNonNegativeDouble(
+        practicesController.text,
+        workloadItem.practices,
+      ),
+      labs: parseNonNegativeDouble(labsController.text, workloadItem.labs),
+      exams: parseNonNegativeDouble(examsController.text, workloadItem.exams),
+      examConsults: parseNonNegativeDouble(
+        examConsultsController.text,
+        workloadItem.examConsults,
+      ),
+      tests: parseNonNegativeDouble(testsController.text, workloadItem.tests),
+      qualificationWorks: parseNonNegativeDouble(
+        qualificationWorksController.text,
+        workloadItem.qualificationWorks,
+      ),
+      certificationExams: parseNonNegativeDouble(
+        certificationExamsController.text,
+        workloadItem.certificationExams,
+      ),
+      productionPractices: parseNonNegativeDouble(
+        productionPracticesController.text,
+        workloadItem.productionPractices,
+      ),
+      teachingPractices: parseNonNegativeDouble(
+        teachingPracticesController.text,
+        workloadItem.teachingPractices,
+      ),
+      currentConsults: parseNonNegativeDouble(
+        currentConsultsController.text,
+        workloadItem.currentConsults,
+      ),
+      individualWorks: parseNonNegativeDouble(
+        individualWorksController.text,
+        workloadItem.individualWorks,
+      ),
+      courseWorks: parseNonNegativeDouble(
+        courseWorksController.text,
+        workloadItem.courseWorks,
+      ),
+      postgraduateExams: parseNonNegativeDouble(
+        postgraduateExamsController.text,
+        workloadItem.postgraduateExams,
+      ),
     );
 
-    onUpdate();
+    onUpdate(newItem);
   }
 
   DataCell editableCell(
