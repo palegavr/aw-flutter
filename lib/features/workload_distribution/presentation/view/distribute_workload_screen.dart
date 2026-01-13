@@ -36,6 +36,10 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
       TextEditingController();
   final FocusNode _editProjectTitleFieldFocusNode = FocusNode();
 
+  final ValueNotifier<String?> _workloadHintNotifier = ValueNotifier<String?>(
+    null,
+  );
+
   _DistributeWorkloadScreenState() {
     _postConstruct();
   }
@@ -51,6 +55,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
     _editProjectTitleFieldFocusNode.removeListener(_onTitleFocusChange);
     _editProjectTitleFieldFocusNode.dispose();
     _editProjectTitleFieldTextEditingController.dispose();
+    _workloadHintNotifier.dispose();
     super.dispose();
   }
 
@@ -212,6 +217,43 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          ValueListenableBuilder<String?>(
+            valueListenable: _workloadHintNotifier,
+            builder: (context, hint, _) {
+              if (hint == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      hint,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
         title: Row(
           children: [
             Expanded(
@@ -286,6 +328,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                               ? _Form3Editor(
                                 universityForm1: _project.universityForm1,
                                 universityForm3: _project.universityForm3,
+                                hintNotifier: _workloadHintNotifier,
                                 onChange: (UniversityForm3 newUniversityForm3) {
                                   _setUniversityForm3(newUniversityForm3);
                                 },
@@ -526,6 +569,7 @@ class _Form1Table extends StatelessWidget {
 class _Form3Editor extends StatelessWidget {
   final UniversityForm1 universityForm1;
   final UniversityForm3 universityForm3;
+  final ValueNotifier<String?> hintNotifier;
 
   final void Function(UniversityForm3) onChange;
 
@@ -534,6 +578,7 @@ class _Form3Editor extends StatelessWidget {
     required this.universityForm3,
     required this.onChange,
     required this.universityForm1,
+    required this.hintNotifier,
   });
 
   @override
@@ -906,6 +951,10 @@ class _Form3Editor extends StatelessWidget {
                                                             },
                                                             form1:
                                                                 universityForm1,
+                                                            form3:
+                                                                universityForm3,
+                                                            hintNotifier:
+                                                                hintNotifier,
                                                           );
                                                         }).toList(),
                                                   ),
@@ -1007,6 +1056,8 @@ DataRow buildForm3DataRowEdit({
   required void Function(UniversityForm3WorkloadItem) onUpdate,
   required void Function(UniversityForm3WorkloadItem) onDelete,
   required UniversityForm1 form1,
+  required UniversityForm3 form3,
+  required ValueNotifier<String?> hintNotifier,
 }) {
   final academicGroupsController = TextEditingController(
     text: workloadItem.academicGroups.join(", "),
@@ -1138,32 +1189,35 @@ DataRow buildForm3DataRowEdit({
     onUpdate(newItem);
   }
 
-  DataCell editableCell(
-    TextEditingController controller, {
+  DataCell _editableCell({
+    required TextEditingController controller,
     bool numeric = false,
     bool isInteger = false,
     bool allowNegative = false,
     VoidCallback? onTap,
     bool readOnly = false,
+    String? fieldName,
+    double Function(UniversityForm1WorkloadItem)? universityForm1ValueGetter,
+    double Function(UniversityForm3WorkloadItem)? universityForm3ValueGetter,
+    bool enableHint = false,
   }) {
     return DataCell(
-      TextField(
+      _EditableWorkloadCell(
         controller: controller,
-        readOnly: readOnly,
+        numeric: numeric,
+        isInteger: isInteger,
+        allowNegative: allowNegative,
         onTap: onTap,
-        keyboardType:
-            numeric
-                ? TextInputType.numberWithOptions(
-                  decimal: !isInteger,
-                  signed: allowNegative,
-                )
-                : TextInputType.text,
-        decoration: const InputDecoration(border: InputBorder.none),
+        readOnly: readOnly,
+        fieldName: fieldName,
+        universityForm1ValueGetter: universityForm1ValueGetter,
+        universityForm3ValueGetter: universityForm3ValueGetter,
+        enableHint: enableHint,
+        form1: form1,
+        form3: form3,
+        hintNotifier: hintNotifier,
+        workloadItem: workloadItem,
         onEditingComplete: handleChange,
-        onTapOutside: (_) {
-          FocusManager.instance.primaryFocus?.unfocus();
-          handleChange();
-        },
       ),
     );
   }
@@ -1177,39 +1231,134 @@ DataRow buildForm3DataRowEdit({
       DataCell(Text(workloadItem.workloadKey.disciplineName)),
       DataCell(Text(workloadItem.workloadKey.learningForm.shortDisplayName)),
       DataCell(Text(workloadItem.workloadKey.specialty)),
-      editableCell(
-        academicGroupsController,
-        readOnly: true,
-        onTap: () {
-          showDialog(
-            context: context,
-            builder:
-                (context) => GroupEditorDialog(
-                  initialGroups: workloadItem.academicGroups,
-                  onSave: (newGroups) {
-                    academicGroupsController.text = newGroups.join(", ");
-                    handleChange();
-                  },
-                ),
-          );
-        },
+      DataCell(
+        TextField(
+          readOnly: true,
+          controller: academicGroupsController,
+          onTap: () {
+            showDialog(
+              context: context,
+              builder:
+                  (context) => GroupEditorDialog(
+                    initialGroups: workloadItem.academicGroups,
+                    onSave: (newGroups) {
+                      academicGroupsController.text = newGroups.join(", ");
+                      handleChange();
+                    },
+                  ),
+            );
+          },
+          decoration: const InputDecoration(border: InputBorder.none),
+        ),
       ),
       DataCell(Text(workloadItem.workloadKey.course)),
-      editableCell(studentCountController, numeric: true, isInteger: true),
-      editableCell(lecturesController, numeric: true),
-      editableCell(practicesController, numeric: true),
-      editableCell(labsController, numeric: true),
-      editableCell(examsController, numeric: true),
-      editableCell(examConsultsController, numeric: true),
-      editableCell(testsController, numeric: true),
-      editableCell(qualificationWorksController, numeric: true),
-      editableCell(certificationExamsController, numeric: true),
-      editableCell(productionPracticesController, numeric: true),
-      editableCell(teachingPracticesController, numeric: true),
-      editableCell(currentConsultsController, numeric: true),
-      editableCell(individualWorksController, numeric: true),
-      editableCell(courseWorksController, numeric: true),
-      editableCell(postgraduateExamsController, numeric: true),
+      _editableCell(
+        controller: studentCountController,
+        numeric: true,
+        isInteger: true,
+        fieldName: 'Студенти',
+        universityForm1ValueGetter: (i) => i.studentCount.toDouble(),
+        universityForm3ValueGetter: (i) => i.studentCount.toDouble(),
+      ),
+      _editableCell(
+        controller: lecturesController,
+        numeric: true,
+        fieldName: 'Лекції',
+        universityForm1ValueGetter: (i) => i.lecturesTotal,
+        universityForm3ValueGetter: (i) => i.lectures,
+      ),
+      _editableCell(
+        controller: practicesController,
+        numeric: true,
+        fieldName: 'Практичні',
+        universityForm1ValueGetter: (i) => i.practicesTotal,
+        universityForm3ValueGetter: (i) => i.practices,
+      ),
+      _editableCell(
+        controller: labsController,
+        numeric: true,
+        fieldName: 'Лабораторні',
+        universityForm1ValueGetter: (i) => i.labsTotal,
+        universityForm3ValueGetter: (i) => i.labs,
+        enableHint: true,
+      ),
+      _editableCell(
+        controller: examsController,
+        numeric: true,
+        fieldName: 'Екзамени',
+        universityForm1ValueGetter: (i) => i.exams,
+        universityForm3ValueGetter: (i) => i.exams,
+      ),
+      _editableCell(
+        controller: examConsultsController,
+        numeric: true,
+        fieldName: 'Конс. перед екз.',
+        universityForm1ValueGetter: (i) => i.examConsults,
+        universityForm3ValueGetter: (i) => i.examConsults,
+      ),
+      _editableCell(
+        controller: testsController,
+        numeric: true,
+        fieldName: 'Заліки',
+        universityForm1ValueGetter: (i) => i.tests,
+        universityForm3ValueGetter: (i) => i.tests,
+      ),
+      _editableCell(
+        controller: qualificationWorksController,
+        numeric: true,
+        fieldName: 'Квал. роботи',
+        universityForm1ValueGetter: (i) => i.qualificationWorks,
+        universityForm3ValueGetter: (i) => i.qualificationWorks,
+      ),
+      _editableCell(
+        controller: certificationExamsController,
+        numeric: true,
+        fieldName: 'Атестац. екз.',
+        universityForm1ValueGetter: (i) => i.certificationExams,
+        universityForm3ValueGetter: (i) => i.certificationExams,
+      ),
+      _editableCell(
+        controller: productionPracticesController,
+        numeric: true,
+        fieldName: 'Вироб. практ.',
+        universityForm1ValueGetter: (i) => i.productionPractices,
+        universityForm3ValueGetter: (i) => i.productionPractices,
+      ),
+      _editableCell(
+        controller: teachingPracticesController,
+        numeric: true,
+        fieldName: 'Навч. практ.',
+        universityForm1ValueGetter: (i) => i.teachingPractices,
+        universityForm3ValueGetter: (i) => i.teachingPractices,
+      ),
+      _editableCell(
+        controller: currentConsultsController,
+        numeric: true,
+        fieldName: 'Пот. конс.',
+        universityForm1ValueGetter: (i) => i.currentConsults,
+        universityForm3ValueGetter: (i) => i.currentConsults,
+      ),
+      _editableCell(
+        controller: individualWorksController,
+        numeric: true,
+        fieldName: 'Інд. завд.',
+        universityForm1ValueGetter: (i) => i.individualWorks,
+        universityForm3ValueGetter: (i) => i.individualWorks,
+      ),
+      _editableCell(
+        controller: courseWorksController,
+        numeric: true,
+        fieldName: 'Курс. роботи',
+        universityForm1ValueGetter: (i) => i.courseWorks,
+        universityForm3ValueGetter: (i) => i.courseWorks,
+      ),
+      _editableCell(
+        controller: postgraduateExamsController,
+        numeric: true,
+        fieldName: 'Асп. екз.',
+        universityForm1ValueGetter: (i) => i.postgraduateExams,
+        universityForm3ValueGetter: (i) => i.postgraduateExams,
+      ),
       DataCell(
         IconButton(
           icon: const Icon(Icons.delete),
@@ -1218,4 +1367,171 @@ DataRow buildForm3DataRowEdit({
       ),
     ],
   );
+}
+
+class _EditableWorkloadCell extends StatefulWidget {
+  final TextEditingController controller;
+  final bool numeric;
+  final bool isInteger;
+  final bool allowNegative;
+  final VoidCallback? onTap;
+  final bool readOnly;
+  final String? fieldName;
+  final double Function(UniversityForm1WorkloadItem)? universityForm1ValueGetter;
+  final double Function(UniversityForm3WorkloadItem)? universityForm3ValueGetter;
+  final bool enableHint;
+  final UniversityForm1 form1;
+  final UniversityForm3 form3;
+  final ValueNotifier<String?> hintNotifier;
+  final UniversityForm3WorkloadItem workloadItem;
+  final VoidCallback onEditingComplete;
+
+  const _EditableWorkloadCell({
+    required this.controller,
+    this.numeric = false,
+    this.isInteger = false,
+    this.allowNegative = false,
+    this.onTap,
+    this.readOnly = false,
+    this.fieldName,
+    this.universityForm1ValueGetter,
+    this.universityForm3ValueGetter,
+    this.enableHint = false,
+    required this.form1,
+    required this.form3,
+    required this.hintNotifier,
+    required this.workloadItem,
+    required this.onEditingComplete,
+  });
+
+  @override
+  State<_EditableWorkloadCell> createState() => _EditableWorkloadCellState();
+}
+
+class _EditableWorkloadCellState extends State<_EditableWorkloadCell> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _clearHintIfMine();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _EditableWorkloadCell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_focusNode.hasFocus) {
+      _updateHint();
+    } else {
+      _clearHintIfMine();
+    }
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) {
+      _updateHint();
+    } else {
+      _clearHintIfMine();
+    }
+  }
+
+  void _clearHintIfMine() {
+    if (widget.hintNotifier.value?.startsWith("${widget.fieldName}:") ??
+        false) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Re-check in case another field gained focus in the meantime
+        if (widget.hintNotifier.value?.startsWith("${widget.fieldName}:") ??
+            false) {
+          widget.hintNotifier.value = null;
+        }
+      });
+    }
+  }
+
+  String _formatNumber(num value) {
+    if (value == value.toInt()) {
+      return value.toInt().toString();
+    }
+    return value.toString();
+  }
+
+  void _updateHint() {
+    if (!widget.enableHint ||
+        widget.fieldName == null ||
+        widget.universityForm1ValueGetter == null ||
+        widget.universityForm3ValueGetter == null) {
+      return;
+    }
+
+    final form1Item = widget.form1.workloadItems.firstWhere(
+      (item) => item.workloadKey == widget.workloadItem.workloadKey,
+    );
+
+    final totalHours = widget.universityForm1ValueGetter!(form1Item);
+
+    // Calculate sum of all OTHER rates/employees
+    double otherDistributedHours = 0;
+    for (final employee in widget.form3.employees) {
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.workloadKey == widget.workloadItem.workloadKey) {
+            otherDistributedHours += widget.universityForm3ValueGetter!(item);
+          }
+        }
+      }
+    }
+
+    final currentValue =
+        double.tryParse(widget.controller.text.replaceAll(',', '.')) ?? 0.0;
+    final oldValueInForm = widget.universityForm3ValueGetter!(
+      widget.workloadItem,
+    );
+
+    final distributedHours =
+        otherDistributedHours - oldValueInForm + currentValue;
+
+    final remainingHours = totalHours - distributedHours;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.hasFocus) {
+        widget.hintNotifier.value =
+            '${widget.fieldName}: ${_formatNumber(remainingHours)} / ${_formatNumber(totalHours)} год. залишилось';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      focusNode: _focusNode,
+      controller: widget.controller,
+      readOnly: widget.readOnly,
+      onTap: widget.onTap,
+      onChanged: (_) => _updateHint(),
+      keyboardType:
+          widget.numeric
+              ? TextInputType.numberWithOptions(
+                decimal: !widget.isInteger,
+                signed: widget.allowNegative,
+              )
+              : TextInputType.text,
+      decoration: const InputDecoration(border: InputBorder.none),
+      onEditingComplete: () {
+        _focusNode.unfocus();
+        widget.onEditingComplete();
+      },
+      onTapOutside: (_) {
+        _focusNode.unfocus();
+        widget.onEditingComplete();
+      },
+    );
+  }
 }
