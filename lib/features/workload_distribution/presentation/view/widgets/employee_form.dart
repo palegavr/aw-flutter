@@ -72,7 +72,7 @@ class EmployeeFormState extends State<EmployeeForm> {
         dateEnd = _dateEnd!;
       }
 
-      final employee = Employee(
+      final employee = Employee.create(
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
         patronymic: _patronymicController.text,

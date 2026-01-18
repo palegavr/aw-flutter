@@ -489,20 +489,45 @@ enum EmployeeRank {
   const EmployeeRank(this.displayName);
 }
 
-@freezed
-abstract class Employee with _$Employee {
-  const Employee._();
+@JsonSerializable(explicitToJson: true)
+class Employee {
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String patronymic;
+  final EmployeeRank rank;
+  final List<EmployeeRate> rates;
 
-  const factory Employee({
+  const Employee({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.patronymic,
+    required this.rank,
+    required this.rates,
+  });
+
+  factory Employee.fromJson(Map<String, dynamic> json) =>
+      _$EmployeeFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EmployeeToJson(this);
+
+  factory Employee.create({
     required String firstName,
     required String lastName,
     required String patronymic,
     required EmployeeRank rank,
-    required List<EmployeeRate> rates,
-  }) = _Employee;
-
-  factory Employee.fromJson(Map<String, dynamic> json) =>
-      _$EmployeeFromJson(json);
+    List<EmployeeRate> rates = const [],
+  }) {
+    return Employee(
+      id: const Uuid().v4(),
+      firstName: firstName,
+      lastName: lastName,
+      patronymic: patronymic,
+      rank: rank,
+      rates: rates,
+    );
+  }
 
   String get fullName =>
       '$firstName $lastName${patronymic.isNotEmpty ? ' $patronymic' : ''}';
@@ -525,6 +550,32 @@ abstract class Employee with _$Employee {
     newRates[index] = newRate;
     return copyWith(rates: newRates);
   }
+
+  Employee copyWith({
+    String? id,
+    String? firstName,
+    String? lastName,
+    String? patronymic,
+    EmployeeRank? rank,
+    List<EmployeeRate>? rates,
+  }) {
+    return Employee(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      patronymic: patronymic ?? this.patronymic,
+      rank: rank ?? this.rank,
+      rates: rates ?? this.rates,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Employee && runtimeType == other.runtimeType && id == other.id);
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 @freezed
