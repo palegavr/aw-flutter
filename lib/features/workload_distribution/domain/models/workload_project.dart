@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import 'package:aw_flutter/database/app_database.dart';
 import 'package:aw_flutter/features/workload_distribution/domain/models/academic_semester.dart';
 import 'package:aw_flutter/features/workload_distribution/domain/models/learning_form.dart';
@@ -83,17 +84,36 @@ class WorkloadDistributionProject {
   }
 }
 
-@freezed
-abstract class UniversityForm1 with _$UniversityForm1 {
-  const factory UniversityForm1({
-    required int academicYear,
-    required List<UniversityForm1WorkloadItem> workloadItems,
-  }) = _UniversityForm1;
+@JsonSerializable(explicitToJson: true)
+class UniversityForm1 {
+  final String id;
+  final int academicYear;
+  final List<UniversityForm1WorkloadItem> workloadItems;
+
+  const UniversityForm1({
+    required this.id,
+    required this.academicYear,
+    required this.workloadItems,
+  });
 
   factory UniversityForm1.fromJson(Map<String, dynamic> json) =>
       _$UniversityForm1FromJson(json);
 
+  factory UniversityForm1.create({
+    required int academicYear,
+    List<UniversityForm1WorkloadItem> workloadItems = const [],
+  }) {
+    return UniversityForm1(
+      id: const Uuid().v4(),
+      academicYear: academicYear,
+      workloadItems: workloadItems,
+    );
+  }
+
+  Map<String, dynamic> toJson() => _$UniversityForm1ToJson(this);
+
   static UniversityForm1 fromParsedExcelFile({
+    required String id,
     required ParsedExcelFile file,
     required String sheetName,
     required int academicYear,
@@ -142,10 +162,33 @@ abstract class UniversityForm1 with _$UniversityForm1 {
     }
 
     return UniversityForm1(
+      id: id,
       academicYear: academicYear,
       workloadItems: workloadItems,
     );
   }
+
+  UniversityForm1 copyWith({
+    String? id,
+    int? academicYear,
+    List<UniversityForm1WorkloadItem>? workloadItems,
+  }) {
+    return UniversityForm1(
+      id: id ?? this.id,
+      academicYear: academicYear ?? this.academicYear,
+      workloadItems: workloadItems ?? this.workloadItems,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UniversityForm1 &&
+          runtimeType == other.runtimeType &&
+          id == other.id);
+
+  @override
+  int get hashCode => id.hashCode;
 
   static double _parseDouble(String value) {
     if (value.isEmpty) return 0.0;

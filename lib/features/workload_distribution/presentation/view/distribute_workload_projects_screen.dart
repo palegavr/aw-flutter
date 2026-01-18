@@ -169,9 +169,8 @@ class _CreateProjectDialogState extends State<_CreateProjectDialog> {
     if (_formKey.currentState!.validate()) {
       final int projectId = await widget._service.create(
         title: _titleController.text,
-        universityForm1: UniversityForm1(
+        universityForm1: UniversityForm1.create(
           academicYear: DateTime.now().year,
-          workloadItems: [],
         ),
         universityForm3: UniversityForm3(
           academicYear: DateTime.now().year,

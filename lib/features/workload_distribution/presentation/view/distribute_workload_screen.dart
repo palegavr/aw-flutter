@@ -180,6 +180,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                                 : () async {
                                   final newForm1 =
                                       UniversityForm1.fromParsedExcelFile(
+                                        id: _project.universityForm1.id,
                                         file: parsedFile,
                                         sheetName: selectedSheet!,
                                         academicYear:
