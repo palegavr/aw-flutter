@@ -124,7 +124,7 @@ class UniversityForm1 {
     if (sheetData != null) {
       for (final row in sheetData) {
         workloadItems.add(
-          UniversityForm1WorkloadItem(
+          UniversityForm1WorkloadItem.create(
             workloadKey: WorkloadKey(
               learningForm: LearningForm.fromShortDisplayName(
                 row.learningForm.trim(),
@@ -286,9 +286,61 @@ class UniversityForm3 {
   int get hashCode => id.hashCode;
 }
 
-@freezed
-abstract class UniversityForm1WorkloadItem with _$UniversityForm1WorkloadItem {
-  const factory UniversityForm1WorkloadItem({
+@JsonSerializable(explicitToJson: true)
+class UniversityForm1WorkloadItem {
+  final String id;
+  final WorkloadKey workloadKey;
+  final double weekCount;
+  final int studentCount;
+  final double flowCount;
+  final double groupCount;
+  final double subgroupCount;
+  final double lecturesPlanned;
+  final double lecturesTotal;
+  final double practicesPlanned;
+  final double practicesTotal;
+  final double labsPlanned;
+  final double labsTotal;
+  final double exams;
+  final double examConsults;
+  final double tests;
+  final double qualificationWorks;
+  final double certificationExams;
+  final double productionPractices;
+  final double teachingPractices;
+  final double currentConsults;
+  final double individualWorks;
+  final double courseWorks;
+  final double postgraduateExams;
+
+  const UniversityForm1WorkloadItem({
+    required this.id,
+    required this.workloadKey,
+    required this.weekCount,
+    required this.studentCount,
+    required this.flowCount,
+    required this.groupCount,
+    required this.subgroupCount,
+    required this.lecturesPlanned,
+    required this.lecturesTotal,
+    required this.practicesPlanned,
+    required this.practicesTotal,
+    required this.labsPlanned,
+    required this.labsTotal,
+    required this.exams,
+    required this.examConsults,
+    required this.tests,
+    required this.qualificationWorks,
+    required this.certificationExams,
+    required this.productionPractices,
+    required this.teachingPractices,
+    required this.currentConsults,
+    required this.individualWorks,
+    required this.courseWorks,
+    required this.postgraduateExams,
+  });
+
+  factory UniversityForm1WorkloadItem.create({
     required WorkloadKey workloadKey,
     required double weekCount,
     required int studentCount,
@@ -312,10 +364,103 @@ abstract class UniversityForm1WorkloadItem with _$UniversityForm1WorkloadItem {
     required double individualWorks,
     required double courseWorks,
     required double postgraduateExams,
-  }) = _UniversityForm1WorkloadItem;
+  }) {
+    return UniversityForm1WorkloadItem(
+      id: const Uuid().v4(),
+      workloadKey: workloadKey,
+      weekCount: weekCount,
+      studentCount: studentCount,
+      flowCount: flowCount,
+      groupCount: groupCount,
+      subgroupCount: subgroupCount,
+      lecturesPlanned: lecturesPlanned,
+      lecturesTotal: lecturesTotal,
+      practicesPlanned: practicesPlanned,
+      practicesTotal: practicesTotal,
+      labsPlanned: labsPlanned,
+      labsTotal: labsTotal,
+      exams: exams,
+      examConsults: examConsults,
+      tests: tests,
+      qualificationWorks: qualificationWorks,
+      certificationExams: certificationExams,
+      productionPractices: productionPractices,
+      teachingPractices: teachingPractices,
+      currentConsults: currentConsults,
+      individualWorks: individualWorks,
+      courseWorks: courseWorks,
+      postgraduateExams: postgraduateExams,
+    );
+  }
 
   factory UniversityForm1WorkloadItem.fromJson(Map<String, dynamic> json) =>
       _$UniversityForm1WorkloadItemFromJson(json);
+
+  Map<String, dynamic> toJson() => _$UniversityForm1WorkloadItemToJson(this);
+
+  UniversityForm1WorkloadItem copyWith({
+    String? id,
+    WorkloadKey? workloadKey,
+    double? weekCount,
+    int? studentCount,
+    double? flowCount,
+    double? groupCount,
+    double? subgroupCount,
+    double? lecturesPlanned,
+    double? lecturesTotal,
+    double? practicesPlanned,
+    double? practicesTotal,
+    double? labsPlanned,
+    double? labsTotal,
+    double? exams,
+    double? examConsults,
+    double? tests,
+    double? qualificationWorks,
+    double? certificationExams,
+    double? productionPractices,
+    double? teachingPractices,
+    double? currentConsults,
+    double? individualWorks,
+    double? courseWorks,
+    double? postgraduateExams,
+  }) {
+    return UniversityForm1WorkloadItem(
+      id: id ?? this.id,
+      workloadKey: workloadKey ?? this.workloadKey,
+      weekCount: weekCount ?? this.weekCount,
+      studentCount: studentCount ?? this.studentCount,
+      flowCount: flowCount ?? this.flowCount,
+      groupCount: groupCount ?? this.groupCount,
+      subgroupCount: subgroupCount ?? this.subgroupCount,
+      lecturesPlanned: lecturesPlanned ?? this.lecturesPlanned,
+      lecturesTotal: lecturesTotal ?? this.lecturesTotal,
+      practicesPlanned: practicesPlanned ?? this.practicesPlanned,
+      practicesTotal: practicesTotal ?? this.practicesTotal,
+      labsPlanned: labsPlanned ?? this.labsPlanned,
+      labsTotal: labsTotal ?? this.labsTotal,
+      exams: exams ?? this.exams,
+      examConsults: examConsults ?? this.examConsults,
+      tests: tests ?? this.tests,
+      qualificationWorks: qualificationWorks ?? this.qualificationWorks,
+      certificationExams: certificationExams ?? this.certificationExams,
+      productionPractices: productionPractices ?? this.productionPractices,
+      teachingPractices: teachingPractices ?? this.teachingPractices,
+      currentConsults: currentConsults ?? this.currentConsults,
+      individualWorks: individualWorks ?? this.individualWorks,
+      courseWorks: courseWorks ?? this.courseWorks,
+      postgraduateExams: postgraduateExams ?? this.postgraduateExams,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UniversityForm1WorkloadItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id);
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 @freezed
