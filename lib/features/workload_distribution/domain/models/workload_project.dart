@@ -217,17 +217,33 @@ class UniversityForm1 {
   }
 }
 
-@freezed
-abstract class UniversityForm3 with _$UniversityForm3 {
-  const UniversityForm3._();
+@JsonSerializable(explicitToJson: true)
+class UniversityForm3 {
+  final String id;
+  final int academicYear;
+  final List<Employee> employees;
 
-  const factory UniversityForm3({
-    required int academicYear,
-    required List<Employee> employees,
-  }) = _UniversityForm3;
+  const UniversityForm3({
+    required this.id,
+    required this.academicYear,
+    required this.employees,
+  });
 
   factory UniversityForm3.fromJson(Map<String, dynamic> json) =>
       _$UniversityForm3FromJson(json);
+
+  Map<String, dynamic> toJson() => _$UniversityForm3ToJson(this);
+
+  factory UniversityForm3.create({
+    required int academicYear,
+    List<Employee> employees = const [],
+  }) {
+    return UniversityForm3(
+      id: const Uuid().v4(),
+      academicYear: academicYear,
+      employees: employees,
+    );
+  }
 
   UniversityForm3 addEmployee(Employee newEmployee) {
     return copyWith(employees: [...this.employees, newEmployee]);
@@ -246,6 +262,28 @@ abstract class UniversityForm3 with _$UniversityForm3 {
       employees: this.employees.where((e) => e != employee).toList(),
     );
   }
+
+  UniversityForm3 copyWith({
+    String? id,
+    int? academicYear,
+    List<Employee>? employees,
+  }) {
+    return UniversityForm3(
+      id: id ?? this.id,
+      academicYear: academicYear ?? this.academicYear,
+      employees: employees ?? this.employees,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UniversityForm3 &&
+          runtimeType == other.runtimeType &&
+          id == other.id);
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 @freezed

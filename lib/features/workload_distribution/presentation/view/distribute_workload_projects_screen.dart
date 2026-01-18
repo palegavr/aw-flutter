@@ -172,9 +172,8 @@ class _CreateProjectDialogState extends State<_CreateProjectDialog> {
         universityForm1: UniversityForm1.create(
           academicYear: DateTime.now().year,
         ),
-        universityForm3: UniversityForm3(
+        universityForm3: UniversityForm3.create(
           academicYear: DateTime.now().year,
-          employees: [],
         ),
       );
       final WorkloadDistributionProject project =
