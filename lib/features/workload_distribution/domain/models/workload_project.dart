@@ -564,56 +564,143 @@ abstract class EmployeeRate with _$EmployeeRate {
   }
 }
 
-@freezed
-abstract class UniversityForm3WorkloadItem with _$UniversityForm3WorkloadItem {
-  const factory UniversityForm3WorkloadItem({
+@JsonSerializable(explicitToJson: true)
+class UniversityForm3WorkloadItem {
+  final String id;
+  final WorkloadKey workloadKey;
+  final int studentCount;
+  final List<String> academicGroups;
+  final double lectures;
+  final double practices;
+  final double labs;
+  final double exams;
+  final double examConsults;
+  final double tests;
+  final double qualificationWorks;
+  final double certificationExams;
+  final double productionPractices;
+  final double teachingPractices;
+  final double currentConsults;
+  final double individualWorks;
+  final double courseWorks;
+  final double postgraduateExams;
+
+  const UniversityForm3WorkloadItem({
+    required this.id,
+    required this.workloadKey,
+    required this.studentCount,
+    required this.academicGroups,
+    required this.lectures,
+    required this.practices,
+    required this.labs,
+    required this.exams,
+    required this.examConsults,
+    required this.tests,
+    required this.qualificationWorks,
+    required this.certificationExams,
+    required this.productionPractices,
+    required this.teachingPractices,
+    required this.currentConsults,
+    required this.individualWorks,
+    required this.courseWorks,
+    required this.postgraduateExams,
+  });
+
+  factory UniversityForm3WorkloadItem.create({
     required WorkloadKey workloadKey,
-    required int studentCount,
-    required List<String> academicGroups,
-    required double lectures,
-    required double practices,
-    required double labs,
-    required double exams,
-    required double examConsults,
-    required double tests,
-    required double qualificationWorks,
-    required double certificationExams,
-    required double productionPractices,
-    required double teachingPractices,
-    required double currentConsults,
-    required double individualWorks,
-    required double courseWorks,
-    required double postgraduateExams,
-  }) = _UniversityForm3WorkloadItem;
+    int studentCount = 0,
+    List<String> academicGroups = const [],
+    double lectures = 0,
+    double practices = 0,
+    double labs = 0,
+    double exams = 0,
+    double examConsults = 0,
+    double tests = 0,
+    double qualificationWorks = 0,
+    double certificationExams = 0,
+    double productionPractices = 0,
+    double teachingPractices = 0,
+    double currentConsults = 0,
+    double individualWorks = 0,
+    double courseWorks = 0,
+    double postgraduateExams = 0,
+  }) {
+    return UniversityForm3WorkloadItem(
+      id: const Uuid().v4(),
+      workloadKey: workloadKey,
+      studentCount: studentCount,
+      academicGroups: academicGroups,
+      lectures: lectures,
+      practices: practices,
+      labs: labs,
+      exams: exams,
+      examConsults: examConsults,
+      tests: tests,
+      qualificationWorks: qualificationWorks,
+      certificationExams: certificationExams,
+      productionPractices: productionPractices,
+      teachingPractices: teachingPractices,
+      currentConsults: currentConsults,
+      individualWorks: individualWorks,
+      courseWorks: courseWorks,
+      postgraduateExams: postgraduateExams,
+    );
+  }
 
   factory UniversityForm3WorkloadItem.fromJson(Map<String, dynamic> json) =>
       _$UniversityForm3WorkloadItemFromJson(json);
 
-  factory UniversityForm3WorkloadItem.empty() {
+  Map<String, dynamic> toJson() => _$UniversityForm3WorkloadItemToJson(this);
+
+  UniversityForm3WorkloadItem copyWith({
+    String? id,
+    WorkloadKey? workloadKey,
+    int? studentCount,
+    List<String>? academicGroups,
+    double? lectures,
+    double? practices,
+    double? labs,
+    double? exams,
+    double? examConsults,
+    double? tests,
+    double? qualificationWorks,
+    double? certificationExams,
+    double? productionPractices,
+    double? teachingPractices,
+    double? currentConsults,
+    double? individualWorks,
+    double? courseWorks,
+    double? postgraduateExams,
+  }) {
     return UniversityForm3WorkloadItem(
-      workloadKey: WorkloadKey(
-        learningForm: LearningForm.daytime,
-        specialty: '',
-        disciplineName: '',
-        course: '',
-        semester: AcademicSemester.first,
-      ),
-      studentCount: 0,
-      academicGroups: [],
-      lectures: 0,
-      practices: 0,
-      labs: 0,
-      exams: 0,
-      examConsults: 0,
-      tests: 0,
-      qualificationWorks: 0,
-      certificationExams: 0,
-      productionPractices: 0,
-      teachingPractices: 0,
-      currentConsults: 0,
-      individualWorks: 0,
-      courseWorks: 0,
-      postgraduateExams: 0,
+      id: id ?? this.id,
+      workloadKey: workloadKey ?? this.workloadKey,
+      studentCount: studentCount ?? this.studentCount,
+      academicGroups: academicGroups ?? this.academicGroups,
+      lectures: lectures ?? this.lectures,
+      practices: practices ?? this.practices,
+      labs: labs ?? this.labs,
+      exams: exams ?? this.exams,
+      examConsults: examConsults ?? this.examConsults,
+      tests: tests ?? this.tests,
+      qualificationWorks: qualificationWorks ?? this.qualificationWorks,
+      certificationExams: certificationExams ?? this.certificationExams,
+      productionPractices: productionPractices ?? this.productionPractices,
+      teachingPractices: teachingPractices ?? this.teachingPractices,
+      currentConsults: currentConsults ?? this.currentConsults,
+      individualWorks: individualWorks ?? this.individualWorks,
+      courseWorks: courseWorks ?? this.courseWorks,
+      postgraduateExams: postgraduateExams ?? this.postgraduateExams,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UniversityForm3WorkloadItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id);
+
+  @override
+  int get hashCode => id.hashCode;
 }

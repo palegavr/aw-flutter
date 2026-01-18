@@ -254,17 +254,15 @@ class _AddWorkloadItemDialogState extends State<AddWorkloadItemDialog> {
                       if (isUsed) break;
                     }
 
-                    final newItem = UniversityForm3WorkloadItem.empty()
-                        .copyWith(
-                          workloadKey: key,
-                          studentCount: isUsed ? 0 : form1Item.studentCount,
-                          lectures: isUsed ? 0 : form1Item.lecturesPlanned,
-                          exams: isUsed ? 0 : form1Item.exams,
-                          tests: isUsed ? 0 : form1Item.tests,
-                          currentConsults:
-                              isUsed ? 0 : form1Item.currentConsults,
-                          examConsults: isUsed ? 0 : form1Item.examConsults,
-                        );
+                    final newItem = UniversityForm3WorkloadItem.create(
+                      workloadKey: key,
+                      studentCount: isUsed ? 0 : form1Item.studentCount,
+                      lectures: isUsed ? 0 : form1Item.lecturesPlanned,
+                      exams: isUsed ? 0 : form1Item.exams,
+                      tests: isUsed ? 0 : form1Item.tests,
+                      currentConsults: isUsed ? 0 : form1Item.currentConsults,
+                      examConsults: isUsed ? 0 : form1Item.examConsults,
+                    );
 
                     widget.onAdd(newItem);
                     Navigator.of(context).pop();
