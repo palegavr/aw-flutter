@@ -78,7 +78,7 @@ class EmployeeFormState extends State<EmployeeForm> {
         patronymic: _patronymicController.text,
         rank: _selectedRank!,
         rates: [
-          EmployeeRate(
+          EmployeeRate.create(
             rateValue: rateValue,
             dateStart: dateStart,
             dateEnd: dateEnd,

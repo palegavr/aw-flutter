@@ -578,20 +578,45 @@ class Employee {
   int get hashCode => id.hashCode;
 }
 
-@freezed
-abstract class EmployeeRate with _$EmployeeRate {
-  const EmployeeRate._();
+@JsonSerializable(explicitToJson: true)
+class EmployeeRate {
+  final String id;
+  final double rateValue;
+  final DateTime dateStart;
+  final DateTime dateEnd;
+  final int postgraduateCount;
+  final List<UniversityForm3WorkloadItem> workloadItems;
 
-  const factory EmployeeRate({
+  const EmployeeRate({
+    required this.id,
+    required this.rateValue,
+    required this.dateStart,
+    required this.dateEnd,
+    required this.postgraduateCount,
+    required this.workloadItems,
+  });
+
+  factory EmployeeRate.create({
     required double rateValue,
     required DateTime dateStart,
     required DateTime dateEnd,
-    required int postgraduateCount,
-    required List<UniversityForm3WorkloadItem> workloadItems,
-  }) = _EmployeeRate;
+    int postgraduateCount = 0,
+    List<UniversityForm3WorkloadItem> workloadItems = const [],
+  }) {
+    return EmployeeRate(
+      id: const Uuid().v4(),
+      rateValue: rateValue,
+      dateStart: dateStart,
+      dateEnd: dateEnd,
+      postgraduateCount: postgraduateCount,
+      workloadItems: workloadItems,
+    );
+  }
 
   factory EmployeeRate.fromJson(Map<String, dynamic> json) =>
       _$EmployeeRateFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EmployeeRateToJson(this);
 
   EmployeeRate addWorkloadItem(UniversityForm3WorkloadItem newItem) {
     return copyWith(workloadItems: [...workloadItems, newItem]);
@@ -613,6 +638,34 @@ abstract class EmployeeRate with _$EmployeeRate {
       workloadItems: workloadItems.where((i) => i != item).toList(),
     );
   }
+
+  EmployeeRate copyWith({
+    String? id,
+    double? rateValue,
+    DateTime? dateStart,
+    DateTime? dateEnd,
+    int? postgraduateCount,
+    List<UniversityForm3WorkloadItem>? workloadItems,
+  }) {
+    return EmployeeRate(
+      id: id ?? this.id,
+      rateValue: rateValue ?? this.rateValue,
+      dateStart: dateStart ?? this.dateStart,
+      dateEnd: dateEnd ?? this.dateEnd,
+      postgraduateCount: postgraduateCount ?? this.postgraduateCount,
+      workloadItems: workloadItems ?? this.workloadItems,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EmployeeRate &&
+          runtimeType == other.runtimeType &&
+          id == other.id);
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 @JsonSerializable(explicitToJson: true)
