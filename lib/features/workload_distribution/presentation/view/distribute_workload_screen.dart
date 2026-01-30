@@ -4,6 +4,7 @@ import 'package:aw_flutter/features/workload_distribution/domain/models/academic
 import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/add_workload_item_dialog.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/employee_form.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/rate_form.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/group_editor_dialog.dart';
 import 'package:aw_flutter/shared/date_time_extension.dart';
 import 'package:aw_flutter/src/rust/api/excel_interface.dart';
@@ -327,11 +328,30 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                                   )
                               : _displayMode == DisplayMode.form3
                               ? _Form3Editor(
-                                universityForm1: _project.universityForm1,
-                                universityForm3: _project.universityForm3,
+                                project: _project,
                                 hintNotifier: _workloadHintNotifier,
                                 onChange: (UniversityForm3 newUniversityForm3) {
                                   _setUniversityForm3(newUniversityForm3);
+                                },
+                                onCreateRate: (employeeId, rateValue, dateStart, dateEnd, postgraduateCount) async {
+                                  _project.createForm3Rate(employeeId, rateValue, dateStart, dateEnd, postgraduateCount);
+                                  await _workloadDistributionProjectService.update(_project);
+                                  await _refreshProject();
+                                },
+                                onRemoveRate: (employee, rate) async {
+                                  _project.removeForm3Rate(employee.id, rate);
+                                  await _workloadDistributionProjectService.update(_project);
+                                  await _refreshProject();
+                                },
+                                onAddEmployee: (employee) async {
+                                  _project.addForm3Employee(employee);
+                                  await _workloadDistributionProjectService.update(_project);
+                                  await _refreshProject();
+                                },
+                                onRemoveEmployee: (employee) async {
+                                  _project.removeForm3Employee(employee);
+                                  await _workloadDistributionProjectService.update(_project);
+                                  await _refreshProject();
                                 },
                               )
                               : const Text('Unimplemented :('),
@@ -568,19 +588,28 @@ class _Form1Table extends StatelessWidget {
 }
 
 class _Form3Editor extends StatelessWidget {
-  final UniversityForm1 universityForm1;
-  final UniversityForm3 universityForm3;
+  final WorkloadDistributionProject project;
   final ValueNotifier<String?> hintNotifier;
 
   final void Function(UniversityForm3) onChange;
+  final void Function(String employeeId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) onCreateRate;
+  final void Function(Employee employee, EmployeeRate rate) onRemoveRate;
+  final void Function(Employee employee) onAddEmployee;
+  final void Function(Employee employee) onRemoveEmployee;
 
   _Form3Editor({
     super.key,
-    required this.universityForm3,
+    required this.project,
     required this.onChange,
-    required this.universityForm1,
     required this.hintNotifier,
+    required this.onCreateRate,
+    required this.onRemoveRate,
+    required this.onAddEmployee,
+    required this.onRemoveEmployee,
   });
+
+  UniversityForm1 get universityForm1 => project.universityForm1;
+  UniversityForm3 get universityForm3 => project.universityForm3;
 
   @override
   Widget build(BuildContext context) {
@@ -595,8 +624,7 @@ class _Form3Editor extends StatelessWidget {
               EmployeeForm(
                 academicYear: universityForm1.academicYear,
                 onSubmit: (employee) {
-                  final newForm3 = universityForm3.addEmployee(employee);
-                  onChange(newForm3);
+                  onAddEmployee(employee);
                 },
               ),
             ],
@@ -620,8 +648,7 @@ class _Form3Editor extends StatelessWidget {
                     academicYear: universityForm1.academicYear,
                     withSubmitButton: false,
                     onSubmit: (employee) {
-                      final newForm3 = universityForm3.addEmployee(employee);
-                      onChange(newForm3);
+                      onAddEmployee(employee);
                     },
                   ),
                   actions: [
@@ -688,9 +715,7 @@ class _Form3Editor extends StatelessWidget {
                                           ),
                                           TextButton(
                                             onPressed: () {
-                                              final newForm3 = universityForm3
-                                                  .removeEmployee(employee);
-                                              onChange(newForm3);
+                                              onRemoveEmployee(employee);
                                               Navigator.of(context).pop();
                                             },
                                             child: const Text('Видалити'),
@@ -708,304 +733,129 @@ class _Form3Editor extends StatelessWidget {
                 ),
                 Expanded(
                   child: TabBarView(
-                    children:
-                        universityForm3.employees.map((employee) {
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.vertical,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Column(
-                                children:
-                                    employee.rates.map((rate) {
-                                      final sortedBySemesterWorkloadItems =
-                                          List.of(rate.workloadItems)..sort(
-                                            (a, b) => a.workloadKey.semester
-                                                .compareTo(
-                                                  b.workloadKey.semester,
-                                                ),
-                                          );
-                                      Widget cardForSemester(
-                                        AcademicSemester semester,
-                                      ) {
-                                        return Card(
+                    children: universityForm3.employees.map((employee) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...employee.rates.map((rate) {
+                              return Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  SizedBox(
-                                                    width: 250,
-                                                    child: Text(
-                                                      '${employee.lastName} | ${rate.rateValue}\n${employee.firstName}\n${employee.patronymic}\n${employee.rank.displayName}\nЗ: ${rate.dateStart.toDefaultString()}\nПо: ${rate.dateEnd.toDefaultString()}\nКількість аспірантів: ${rate.postgraduateCount}',
+                                              Text(
+                                                '${employee.lastName} ${employee.firstName} ${employee.patronymic} | Ставка: ${rate.rateValue}',
+                                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                      fontWeight: FontWeight.bold,
                                                     ),
-                                                  ),
-                                                  DataTable(
-                                                    headingRowHeight: 230,
-                                                    columns: const [
-                                                      DataColumn(
-                                                        label: Text(
-                                                          'Назва дисципліни',
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Форма навчання',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Спеціальність',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: Text('Групи'),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text('Курс'),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Контингент',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text('Лекції'),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Практичні (семінарські)',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Лабораторні',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Екзамени',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Консультації перед екзаменом',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text('Заліки'),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Кваліфікаційні роботи (проєкти)',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Атестаційні екзамени',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Виробнича практика',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Навчальна практика',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Поточні консультації',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Індивідуальні завдання',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Курсові роботи (проєкти)',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: RotatedBox(
-                                                          quarterTurns: -1,
-                                                          child: Text(
-                                                            'Проведення аспірантських екзаменів',
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      DataColumn(
-                                                        label: Text('Дії'),
-                                                      ),
-                                                    ],
-                                                    rows:
-                                                        sortedBySemesterWorkloadItems.map((
-                                                          workloadItem,
-                                                        ) {
-                                                          return buildForm3DataRowEdit(
-                                                            context: context,
-                                                            workloadItem:
-                                                                workloadItem,
-                                                            onUpdate: (
-                                                              newItem,
-                                                            ) {
-                                                              final newRate = rate
-                                                                  .replaceWorkloadItem(
-                                                                    workloadItem,
-                                                                    newItem,
-                                                                  );
-                                                              final newEmployee =
-                                                                  employee
-                                                                      .replaceRate(
-                                                                        rate,
-                                                                        newRate,
-                                                                      );
-                                                              final newForm3 =
-                                                                  universityForm3
-                                                                      .replaceEmployee(
-                                                                        employee,
-                                                                        newEmployee,
-                                                                      );
-                                                              onChange(
-                                                                newForm3,
-                                                              );
-                                                            },
-                                                            onDelete: (
-                                                              itemToDelete,
-                                                            ) {
-                                                              final newRate = rate
-                                                                  .removeWorkloadItem(
-                                                                    itemToDelete,
-                                                                  );
-                                                              final newEmployee =
-                                                                  employee
-                                                                      .replaceRate(
-                                                                        rate,
-                                                                        newRate,
-                                                                      );
-                                                              final newForm3 =
-                                                                  universityForm3
-                                                                      .replaceEmployee(
-                                                                        employee,
-                                                                        newEmployee,
-                                                                      );
-                                                              onChange(
-                                                                newForm3,
-                                                              );
-                                                            },
-                                                            form1:
-                                                                universityForm1,
-                                                            form3:
-                                                                universityForm3,
-                                                            hintNotifier:
-                                                                hintNotifier,
-                                                          );
-                                                        }).toList(),
-                                                  ),
-                                                ],
                                               ),
-                                              FloatingActionButton(
-                                                onPressed: () {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder:
-                                                        (
-                                                          context,
-                                                        ) => AddWorkloadItemDialog(
-                                                          universityForm1:
-                                                              universityForm1,
-                                                          universityForm3:
-                                                              universityForm3,
-                                                          onAdd: (newItem) {
-                                                            final newEmployee =
-                                                                employee
-                                                                    .addWorkloadItem(
-                                                                      rate,
-                                                                      newItem,
-                                                                    );
-                                                            final newForm3 =
-                                                                universityForm3
-                                                                    .replaceEmployee(
-                                                                      employee,
-                                                                      newEmployee,
-                                                                    );
-                                                            onChange(newForm3);
-                                                          },
-                                                        ),
-                                                  );
-                                                },
-                                                child: const Icon(Icons.add),
+                                              Text(
+                                                '${employee.rank.displayName} • ${rate.dateStart.toDefaultString()} - ${rate.dateEnd.toDefaultString()} • Аспірантів: ${rate.postgraduateCount}',
+                                                style: Theme.of(context).textTheme.bodySmall,
                                               ),
                                             ],
                                           ),
-                                        );
-                                      }
-
-                                      return cardForSemester(
-                                        AcademicSemester.first,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                          tooltip: 'Видалити ставку',
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text('Видалити ставку?'),
+                                                content: const Text('Ви впевнені, що хочете видалити цю ставку та все навантаження на ній?'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('Скасувати'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      onRemoveRate(employee, rate);
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: const Text('Видалити', style: TextStyle(color: Colors.red)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  _buildSemesterBlock(
+                                    context: context,
+                                    title: 'I семестр',
+                                    semester: AcademicSemester.first,
+                                    rate: rate,
+                                    employee: employee,
+                                  ),
+                                  _buildSemesterBlock(
+                                    context: context,
+                                    title: 'II семестр',
+                                    semester: AcademicSemester.second,
+                                    rate: rate,
+                                    employee: employee,
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      final rateFormKey = GlobalKey<RateFormState>();
+                                      return AlertDialog(
+                                        title: const Text('Додати ставку'),
+                                        content: RateForm(
+                                          key: rateFormKey,
+                                          academicYear: universityForm1.academicYear,
+                                          onSubmit: (rateValue, dateStart, dateEnd, postgraduateCount) {
+                                            onCreateRate(employee.id, rateValue, dateStart, dateEnd, postgraduateCount);
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('Скасувати'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              rateFormKey.currentState?.submitForm();
+                                            },
+                                            child: const Text('Додати'),
+                                          ),
+                                        ],
                                       );
-                                    }).toList(),
+                                    },
+                                  );
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Додати ставку'),
                               ),
                             ),
-                          );
-                        }).toList(),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
@@ -1013,6 +863,109 @@ class _Form3Editor extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSemesterBlock({
+    required BuildContext context,
+    required String title,
+    required AcademicSemester semester,
+    required EmployeeRate rate,
+    required Employee employee,
+  }) {
+    final semesterItems = rate.workloadItems.where((item) => item.workloadKey.semester == semester).toList();
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
+            ),
+            if (semesterItems.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('Навантаження не розподілено'),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowHeight: 160,
+                  columns: const [
+                    DataColumn(label: Text('Назва дисципліни')),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Форма навчання'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Спеціальність'))),
+                    DataColumn(label: Text('Групи')),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Курс'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Контингент'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Лекції'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Практичні'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Лабораторні'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Екзамени'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Консультації перед екз.'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Заліки'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Кваліфікаційні роботи'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Атестаційні екзамени'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Виробнича практика'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Навчальна практика'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Поточні консультації'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Індивідуальні завдання'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Курсові роботи'))),
+                    DataColumn(label: RotatedBox(quarterTurns: -1, child: Text('Аспірантські екзамени'))),
+                    DataColumn(label: Text('Дії')),
+                  ],
+                  rows: semesterItems.map((workloadItem) {
+                    return buildForm3DataRowEdit(
+                      context: context,
+                      workloadItem: workloadItem,
+                      onUpdate: (newItem) {
+                        universityForm3.replaceWorkloadItem(employee.id, rate, workloadItem, newItem);
+                        onChange(universityForm3);
+                      },
+                      onDelete: (itemToDelete) {
+                        universityForm3.removeWorkloadItem(employee.id, rate, itemToDelete);
+                        onChange(universityForm3);
+                      },
+                      project: project,
+                      hintNotifier: hintNotifier,
+                    );
+                  }).toList(),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+              child: TextButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AddWorkloadItemDialog(
+                      universityForm1: universityForm1,
+                      universityForm3: universityForm3,
+                      onAdd: (newItem) {
+                        universityForm3.addWorkloadItem(employee.id, rate, newItem);
+                        onChange(universityForm3);
+                      },
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Додати навантаження'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1056,8 +1009,7 @@ DataRow buildForm3DataRowEdit({
   required UniversityForm3WorkloadItem workloadItem,
   required void Function(UniversityForm3WorkloadItem) onUpdate,
   required void Function(UniversityForm3WorkloadItem) onDelete,
-  required UniversityForm1 form1,
-  required UniversityForm3 form3,
+  required WorkloadDistributionProject project,
   required ValueNotifier<String?> hintNotifier,
 }) {
   final academicGroupsController = TextEditingController(
@@ -1198,8 +1150,7 @@ DataRow buildForm3DataRowEdit({
     VoidCallback? onTap,
     bool readOnly = false,
     String? fieldName,
-    double Function(UniversityForm1WorkloadItem)? universityForm1ValueGetter,
-    double Function(UniversityForm3WorkloadItem)? universityForm3ValueGetter,
+    WorkloadField? field,
     bool enableHint = false,
   }) {
     return DataCell(
@@ -1211,11 +1162,9 @@ DataRow buildForm3DataRowEdit({
         onTap: onTap,
         readOnly: readOnly,
         fieldName: fieldName,
-        universityForm1ValueGetter: universityForm1ValueGetter,
-        universityForm3ValueGetter: universityForm3ValueGetter,
+        field: field,
         enableHint: enableHint,
-        form1: form1,
-        form3: form3,
+        project: project,
         hintNotifier: hintNotifier,
         workloadItem: workloadItem,
         onEditingComplete: handleChange,
@@ -1226,8 +1175,8 @@ DataRow buildForm3DataRowEdit({
   return DataRow(
     color:
         workloadItem.workloadKey.semester == AcademicSemester.first
-            ? MaterialStateProperty.all(Colors.grey[100])
-            : MaterialStateProperty.all(Colors.grey[200]),
+            ? WidgetStateProperty.all(Colors.grey[100])
+            : WidgetStateProperty.all(Colors.grey[200]),
     cells: [
       DataCell(Text(workloadItem.workloadKey.disciplineName)),
       DataCell(Text(workloadItem.workloadKey.learningForm.shortDisplayName)),
@@ -1258,107 +1207,92 @@ DataRow buildForm3DataRowEdit({
         numeric: true,
         isInteger: true,
         fieldName: 'Студенти',
-        universityForm1ValueGetter: (i) => i.studentCount.toDouble(),
-        universityForm3ValueGetter: (i) => i.studentCount.toDouble(),
+        field: WorkloadField.studentCount,
       ),
       _editableCell(
         controller: lecturesController,
         numeric: true,
         fieldName: 'Лекції',
-        universityForm1ValueGetter: (i) => i.lecturesTotal,
-        universityForm3ValueGetter: (i) => i.lectures,
+        field: WorkloadField.lectures,
       ),
       _editableCell(
         controller: practicesController,
         numeric: true,
         fieldName: 'Практичні',
-        universityForm1ValueGetter: (i) => i.practicesTotal,
-        universityForm3ValueGetter: (i) => i.practices,
+        field: WorkloadField.practices,
       ),
       _editableCell(
         controller: labsController,
         numeric: true,
         fieldName: 'Лабораторні',
-        universityForm1ValueGetter: (i) => i.labsTotal,
-        universityForm3ValueGetter: (i) => i.labs,
+        field: WorkloadField.labs,
         enableHint: true,
       ),
       _editableCell(
         controller: examsController,
         numeric: true,
         fieldName: 'Екзамени',
-        universityForm1ValueGetter: (i) => i.exams,
-        universityForm3ValueGetter: (i) => i.exams,
+        field: WorkloadField.exams,
       ),
       _editableCell(
         controller: examConsultsController,
         numeric: true,
         fieldName: 'Конс. перед екз.',
-        universityForm1ValueGetter: (i) => i.examConsults,
-        universityForm3ValueGetter: (i) => i.examConsults,
+        field: WorkloadField.examConsults,
       ),
       _editableCell(
         controller: testsController,
         numeric: true,
         fieldName: 'Заліки',
-        universityForm1ValueGetter: (i) => i.tests,
-        universityForm3ValueGetter: (i) => i.tests,
+        field: WorkloadField.tests,
       ),
       _editableCell(
         controller: qualificationWorksController,
         numeric: true,
         fieldName: 'Квал. роботи',
-        universityForm1ValueGetter: (i) => i.qualificationWorks,
-        universityForm3ValueGetter: (i) => i.qualificationWorks,
+        field: WorkloadField.qualificationWorks,
       ),
       _editableCell(
         controller: certificationExamsController,
         numeric: true,
         fieldName: 'Атестац. екз.',
-        universityForm1ValueGetter: (i) => i.certificationExams,
-        universityForm3ValueGetter: (i) => i.certificationExams,
+        field: WorkloadField.certificationExams,
       ),
       _editableCell(
         controller: productionPracticesController,
         numeric: true,
         fieldName: 'Вироб. практ.',
-        universityForm1ValueGetter: (i) => i.productionPractices,
-        universityForm3ValueGetter: (i) => i.productionPractices,
+        field: WorkloadField.productionPractices,
       ),
       _editableCell(
         controller: teachingPracticesController,
         numeric: true,
         fieldName: 'Навч. практ.',
-        universityForm1ValueGetter: (i) => i.teachingPractices,
-        universityForm3ValueGetter: (i) => i.teachingPractices,
+        field: WorkloadField.teachingPractices,
       ),
       _editableCell(
         controller: currentConsultsController,
         numeric: true,
         fieldName: 'Пот. конс.',
-        universityForm1ValueGetter: (i) => i.currentConsults,
-        universityForm3ValueGetter: (i) => i.currentConsults,
+        field: WorkloadField.currentConsults,
       ),
       _editableCell(
         controller: individualWorksController,
         numeric: true,
         fieldName: 'Інд. завд.',
-        universityForm1ValueGetter: (i) => i.individualWorks,
-        universityForm3ValueGetter: (i) => i.individualWorks,
+        field: WorkloadField.individualWorks,
       ),
       _editableCell(
         controller: courseWorksController,
         numeric: true,
         fieldName: 'Курс. роботи',
-        universityForm1ValueGetter: (i) => i.courseWorks,
-        universityForm3ValueGetter: (i) => i.courseWorks,
+        field: WorkloadField.courseWorks,
       ),
       _editableCell(
         controller: postgraduateExamsController,
         numeric: true,
         fieldName: 'Асп. екз.',
-        universityForm1ValueGetter: (i) => i.postgraduateExams,
-        universityForm3ValueGetter: (i) => i.postgraduateExams,
+        field: WorkloadField.postgraduateExams,
       ),
       DataCell(
         IconButton(
@@ -1378,11 +1312,9 @@ class _EditableWorkloadCell extends StatefulWidget {
   final VoidCallback? onTap;
   final bool readOnly;
   final String? fieldName;
-  final double Function(UniversityForm1WorkloadItem)? universityForm1ValueGetter;
-  final double Function(UniversityForm3WorkloadItem)? universityForm3ValueGetter;
+  final WorkloadField? field;
   final bool enableHint;
-  final UniversityForm1 form1;
-  final UniversityForm3 form3;
+  final WorkloadDistributionProject project;
   final ValueNotifier<String?> hintNotifier;
   final UniversityForm3WorkloadItem workloadItem;
   final VoidCallback onEditingComplete;
@@ -1395,11 +1327,9 @@ class _EditableWorkloadCell extends StatefulWidget {
     this.onTap,
     this.readOnly = false,
     this.fieldName,
-    this.universityForm1ValueGetter,
-    this.universityForm3ValueGetter,
+    this.field,
     this.enableHint = false,
-    required this.form1,
-    required this.form3,
+    required this.project,
     required this.hintNotifier,
     required this.workloadItem,
     required this.onEditingComplete,
@@ -1468,39 +1398,25 @@ class _EditableWorkloadCellState extends State<_EditableWorkloadCell> {
   void _updateHint() {
     if (!widget.enableHint ||
         widget.fieldName == null ||
-        widget.universityForm1ValueGetter == null ||
-        widget.universityForm3ValueGetter == null) {
+        widget.field == null) {
       return;
     }
 
-    final form1Item = widget.form1.workloadItems.firstWhere(
-      (item) => item.workloadKey == widget.workloadItem.workloadKey,
+    final totalHours = widget.project.getTotalWorkload(
+      widget.workloadItem.workloadKey,
+      widget.field!,
     );
-
-    final totalHours = widget.universityForm1ValueGetter!(form1Item);
-
-    // Calculate sum of all OTHER rates/employees
-    double otherDistributedHours = 0;
-    for (final employee in widget.form3.employees) {
-      for (final rate in employee.rates) {
-        for (final item in rate.workloadItems) {
-          if (item.workloadKey == widget.workloadItem.workloadKey) {
-            otherDistributedHours += widget.universityForm3ValueGetter!(item);
-          }
-        }
-      }
-    }
+    final undistributed = widget.project.getUndistributedWorkload(
+      widget.workloadItem.workloadKey,
+      widget.field!,
+    );
 
     final currentValue =
         double.tryParse(widget.controller.text.replaceAll(',', '.')) ?? 0.0;
-    final oldValueInForm = widget.universityForm3ValueGetter!(
-      widget.workloadItem,
-    );
+    final oldValueInForm = widget.workloadItem.getFieldValue(widget.field!);
 
-    final distributedHours =
-        otherDistributedHours - oldValueInForm + currentValue;
+    final remainingHours = undistributed + oldValueInForm - currentValue;
 
-    final remainingHours = totalHours - distributedHours;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _focusNode.hasFocus) {
         widget.hintNotifier.value =

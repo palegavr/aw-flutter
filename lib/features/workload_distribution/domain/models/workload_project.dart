@@ -82,6 +82,70 @@ class WorkloadDistributionProject {
     _universityForm3 = form3;
     _updatedAt = DateTime.now();
   }
+
+  void createForm3Rate(String employeeId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+    final rate = EmployeeRate.create(
+      rateValue: rateValue,
+      dateStart: dateStart,
+      dateEnd: dateEnd,
+      postgraduateCount: postgraduateCount,
+      workloadItems: [],
+    );
+    _universityForm3.addRate(employeeId, rate);
+    _updatedAt = DateTime.now();
+  }
+
+  void removeForm3Rate(String employeeId, EmployeeRate rate) {
+    _universityForm3.removeRate(employeeId, rate);
+    _updatedAt = DateTime.now();
+  }
+
+  void addForm3WorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem newItem) {
+    _universityForm3.addWorkloadItem(employeeId, rate, newItem);
+    _updatedAt = DateTime.now();
+  }
+
+  void replaceForm3WorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem oldItem, UniversityForm3WorkloadItem newItem) {
+    _universityForm3.replaceWorkloadItem(employeeId, rate, oldItem, newItem);
+    _updatedAt = DateTime.now();
+  }
+
+  void removeForm3WorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem item) {
+    _universityForm3.removeWorkloadItem(employeeId, rate, item);
+    _updatedAt = DateTime.now();
+  }
+
+  void addForm3Employee(Employee employee) {
+    _universityForm3.addEmployee(employee);
+    _updatedAt = DateTime.now();
+  }
+
+  void removeForm3Employee(Employee employee) {
+    _universityForm3.removeEmployee(employee);
+    _updatedAt = DateTime.now();
+  }
+
+  double getTotalWorkload(WorkloadKey key, WorkloadField field) {
+    final item = _universityForm1.workloadItems.firstWhere(
+      (item) => item.workloadKey == key,
+    );
+    return item.getFieldValue(field);
+  }
+
+  double getUndistributedWorkload(WorkloadKey key, WorkloadField field) {
+    final total = getTotalWorkload(key, field);
+    double distributed = 0;
+    for (final employee in _universityForm3.employees) {
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.workloadKey == key) {
+            distributed += item.getFieldValue(field);
+          }
+        }
+      }
+    }
+    return total - distributed;
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -245,22 +309,8 @@ class UniversityForm3 {
     );
   }
 
-  UniversityForm3 addEmployee(Employee newEmployee) {
-    return copyWith(employees: [...this.employees, newEmployee]);
-  }
-
-  UniversityForm3 replaceEmployee(Employee oldEmployee, Employee newEmployee) {
-    final index = this.employees.indexOf(oldEmployee);
-    if (index == -1) return this;
-    final newEmployees = List<Employee>.from(this.employees);
-    newEmployees[index] = newEmployee;
-    return copyWith(employees: newEmployees);
-  }
-
-  UniversityForm3 removeEmployee(Employee employee) {
-    return copyWith(
-      employees: this.employees.where((e) => e != employee).toList(),
-    );
+  void addEmployee(Employee newEmployee) {
+    employees.add(newEmployee);
   }
 
   UniversityForm3 copyWith({
@@ -284,6 +334,45 @@ class UniversityForm3 {
 
   @override
   int get hashCode => id.hashCode;
+
+  void addRate(String employeeId, EmployeeRate rate) {
+    final employee = employees.firstWhere((e) => e.id == employeeId);
+    employee.addRate(rate);
+  }
+
+  void replaceEmployee(Employee oldEmployee, Employee newEmployee) {
+    final index = this.employees.indexOf(oldEmployee);
+    if (index == -1) return;
+    employees[index] = newEmployee;
+  }
+
+  void removeEmployee(Employee employee) {
+    employees.remove(employee);
+  }
+
+  void removeRate(String employeeId, EmployeeRate rate) {
+    final employee = employees.firstWhere((e) => e.id == employeeId);
+    employee.removeRate(rate);
+  }
+
+  void addWorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem newItem) {
+    final employee = employees.firstWhere((e) => e.id == employeeId);
+    employee.addWorkloadItem(rate, newItem);
+  }
+
+  void replaceWorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem oldItem, UniversityForm3WorkloadItem newItem) {
+    final employee = employees.firstWhere((e) => e.id == employeeId);
+    final rateIndex = employee.rates.indexOf(rate);
+    if (rateIndex == -1) return;
+    employee.rates[rateIndex].replaceWorkloadItem(oldItem, newItem);
+  }
+
+  void removeWorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem item) {
+    final employee = employees.firstWhere((e) => e.id == employeeId);
+    final rateIndex = employee.rates.indexOf(rate);
+    if (rateIndex == -1) return;
+    employee.rates[rateIndex].removeWorkloadItem(item);
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -452,6 +541,41 @@ class UniversityForm1WorkloadItem {
     );
   }
 
+  double getFieldValue(WorkloadField field) {
+    switch (field) {
+      case WorkloadField.studentCount:
+        return studentCount.toDouble();
+      case WorkloadField.lectures:
+        return lecturesTotal;
+      case WorkloadField.practices:
+        return practicesTotal;
+      case WorkloadField.labs:
+        return labsTotal;
+      case WorkloadField.exams:
+        return exams;
+      case WorkloadField.examConsults:
+        return examConsults;
+      case WorkloadField.tests:
+        return tests;
+      case WorkloadField.qualificationWorks:
+        return qualificationWorks;
+      case WorkloadField.certificationExams:
+        return certificationExams;
+      case WorkloadField.productionPractices:
+        return productionPractices;
+      case WorkloadField.teachingPractices:
+        return teachingPractices;
+      case WorkloadField.currentConsults:
+        return currentConsults;
+      case WorkloadField.individualWorks:
+        return individualWorks;
+      case WorkloadField.courseWorks:
+        return courseWorks;
+      case WorkloadField.postgraduateExams:
+        return postgraduateExams;
+    }
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -532,23 +656,23 @@ class Employee {
   String get fullName =>
       '$firstName $lastName${patronymic.isNotEmpty ? ' $patronymic' : ''}';
 
-  Employee addWorkloadItem(
+  void addWorkloadItem(
     EmployeeRate rate,
     UniversityForm3WorkloadItem newItem,
   ) {
     final index = rates.indexOf(rate);
-    if (index == -1) return this;
-    final newRates = List<EmployeeRate>.from(rates);
-    newRates[index] = rate.addWorkloadItem(newItem);
-    return copyWith(rates: newRates);
+    if (index == -1) return;
+    rates[index].addWorkloadItem(newItem);
   }
 
-  Employee replaceRate(EmployeeRate oldRate, EmployeeRate newRate) {
+  void replaceRate(EmployeeRate oldRate, EmployeeRate newRate) {
     final index = rates.indexOf(oldRate);
-    if (index == -1) return this;
-    final newRates = List<EmployeeRate>.from(rates);
-    newRates[index] = newRate;
-    return copyWith(rates: newRates);
+    if (index == -1) return;
+    rates[index] = newRate;
+  }
+
+  void removeRate(EmployeeRate rate) {
+    rates.remove(rate);
   }
 
   Employee copyWith({
@@ -576,6 +700,10 @@ class Employee {
 
   @override
   int get hashCode => id.hashCode;
+
+  void addRate(EmployeeRate rate) {
+    rates.add(rate);
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -603,6 +731,13 @@ class EmployeeRate {
     int postgraduateCount = 0,
     List<UniversityForm3WorkloadItem> workloadItems = const [],
   }) {
+    if (rateValue <= 0) {
+      throw ArgumentError('rateValue must be greater than 0');
+    }
+    if (postgraduateCount < 0) {
+      throw ArgumentError('postgraduateCount must be greater than or equal to 0');
+    }
+
     return EmployeeRate(
       id: const Uuid().v4(),
       rateValue: rateValue,
@@ -618,25 +753,21 @@ class EmployeeRate {
 
   Map<String, dynamic> toJson() => _$EmployeeRateToJson(this);
 
-  EmployeeRate addWorkloadItem(UniversityForm3WorkloadItem newItem) {
-    return copyWith(workloadItems: [...workloadItems, newItem]);
+  void addWorkloadItem(UniversityForm3WorkloadItem newItem) {
+    workloadItems.add(newItem);
   }
 
-  EmployeeRate replaceWorkloadItem(
+  void replaceWorkloadItem(
     UniversityForm3WorkloadItem oldItem,
     UniversityForm3WorkloadItem newItem,
   ) {
     final index = workloadItems.indexOf(oldItem);
-    if (index == -1) return this;
-    final newItems = List<UniversityForm3WorkloadItem>.from(workloadItems);
-    newItems[index] = newItem;
-    return copyWith(workloadItems: newItems);
+    if (index == -1) return;
+    workloadItems[index] = newItem;
   }
 
-  EmployeeRate removeWorkloadItem(UniversityForm3WorkloadItem item) {
-    return copyWith(
-      workloadItems: workloadItems.where((i) => i != item).toList(),
-    );
+  void removeWorkloadItem(UniversityForm3WorkloadItem item) {
+    workloadItems.remove(item);
   }
 
   EmployeeRate copyWith({
@@ -798,6 +929,41 @@ class UniversityForm3WorkloadItem {
     );
   }
 
+  double getFieldValue(WorkloadField field) {
+    switch (field) {
+      case WorkloadField.studentCount:
+        return studentCount.toDouble();
+      case WorkloadField.lectures:
+        return lectures;
+      case WorkloadField.practices:
+        return practices;
+      case WorkloadField.labs:
+        return labs;
+      case WorkloadField.exams:
+        return exams;
+      case WorkloadField.examConsults:
+        return examConsults;
+      case WorkloadField.tests:
+        return tests;
+      case WorkloadField.qualificationWorks:
+        return qualificationWorks;
+      case WorkloadField.certificationExams:
+        return certificationExams;
+      case WorkloadField.productionPractices:
+        return productionPractices;
+      case WorkloadField.teachingPractices:
+        return teachingPractices;
+      case WorkloadField.currentConsults:
+        return currentConsults;
+      case WorkloadField.individualWorks:
+        return individualWorks;
+      case WorkloadField.courseWorks:
+        return courseWorks;
+      case WorkloadField.postgraduateExams:
+        return postgraduateExams;
+    }
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -807,4 +973,22 @@ class UniversityForm3WorkloadItem {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+enum WorkloadField {
+  studentCount,
+  lectures,
+  practices,
+  labs,
+  exams,
+  examConsults,
+  tests,
+  qualificationWorks,
+  certificationExams,
+  productionPractices,
+  teachingPractices,
+  currentConsults,
+  individualWorks,
+  courseWorks,
+  postgraduateExams,
 }
