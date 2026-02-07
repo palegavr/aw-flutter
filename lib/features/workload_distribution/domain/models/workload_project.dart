@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:aw_flutter/shared/errors/domain_error.dart';
 import 'package:uuid/uuid.dart';
 import 'package:aw_flutter/database/app_database.dart';
 import 'package:aw_flutter/features/workload_distribution/domain/models/academic_semester.dart';
@@ -78,10 +79,6 @@ class WorkloadDistributionProject {
     _updatedAt = DateTime.now();
   }
 
-  void updateForm3(UniversityForm3 form3) {
-    _universityForm3 = form3;
-    _updatedAt = DateTime.now();
-  }
 
   void createForm3Rate(String employeeId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
     final rate = EmployeeRate.create(
@@ -100,18 +97,49 @@ class WorkloadDistributionProject {
     _updatedAt = DateTime.now();
   }
 
-  void addForm3WorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem newItem) {
-    _universityForm3.addWorkloadItem(employeeId, rate, newItem);
+  void addForm3WorkloadItem(String employeeId, String rateId, UniversityForm3WorkloadItem newItem) {
+    for (final field in WorkloadField.values) {
+      final val = newItem.getFieldValue(field);
+      if (val > 0) {
+        _checkWorkloadLimit(newItem.workloadKey, field, val, 0);
+      }
+    }
+
+    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
+    final rate = employee.rates.firstWhere((r) => r.id == rateId);
+    rate.addWorkloadItem(newItem);
     _updatedAt = DateTime.now();
   }
 
-  void replaceForm3WorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem oldItem, UniversityForm3WorkloadItem newItem) {
-    _universityForm3.replaceWorkloadItem(employeeId, rate, oldItem, newItem);
+  void updateForm3WorkloadField(String employeeId, String rateId, String itemId, WorkloadField field, double newValue) {
+    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
+    final rate = employee.rates.firstWhere((r) => r.id == rateId);
+    final itemIndex = rate.workloadItems.indexWhere((i) => i.id == itemId);
+    if (itemIndex == -1) throw DomainError("Навантаження не знайдено");
+
+    final item = rate.workloadItems[itemIndex];
+    final oldValue = item.getFieldValue(field);
+
+    _checkWorkloadLimit(item.workloadKey, field, newValue, oldValue);
+
+    rate.workloadItems[itemIndex] = _setItemFieldValue(item, field, newValue);
     _updatedAt = DateTime.now();
   }
 
-  void removeForm3WorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem item) {
-    _universityForm3.removeWorkloadItem(employeeId, rate, item);
+  void updateForm3WorkloadGroups(String employeeId, String rateId, String itemId, List<String> groups) {
+    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
+    final rate = employee.rates.firstWhere((r) => r.id == rateId);
+    final itemIndex = rate.workloadItems.indexWhere((i) => i.id == itemId);
+    if (itemIndex != -1) {
+      rate.workloadItems[itemIndex] = rate.workloadItems[itemIndex].copyWith(academicGroups: groups);
+      _updatedAt = DateTime.now();
+    }
+  }
+
+  void removeForm3WorkloadItem(String employeeId, String rateId, String itemId) {
+    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
+    final rate = employee.rates.firstWhere((r) => r.id == rateId);
+    rate.workloadItems.removeWhere((i) => i.id == itemId);
     _updatedAt = DateTime.now();
   }
 
@@ -145,6 +173,40 @@ class WorkloadDistributionProject {
       }
     }
     return total - distributed;
+  }
+
+  void _checkWorkloadLimit(WorkloadKey key, WorkloadField field, double newValue, double oldValue) {
+    final undistributed = getUndistributedWorkload(key, field);
+    final total = getTotalWorkload(key, field);
+    
+    if (undistributed + oldValue - newValue < -0.0001) {
+      final distributed = total - undistributed;
+      final newValueDisplay = newValue == newValue.toInt() ? newValue.toInt().toString() : newValue.toStringAsFixed(2);
+      final totalDisplay = total == total.toInt() ? total.toInt().toString() : total.toStringAsFixed(2);
+      final distributedDisplay = distributed == distributed.toInt() ? distributed.toInt().toString() : distributed.toStringAsFixed(2);
+
+      throw DomainError("Перевищено ліміт по полю '${field.getDisplayName()}': заплановано $totalDisplay, вже розподілено $distributedDisplay, ви намагаєтесь встановити $newValueDisplay");
+    }
+  }
+
+  UniversityForm3WorkloadItem _setItemFieldValue(UniversityForm3WorkloadItem item, WorkloadField field, double value) {
+    switch (field) {
+      case WorkloadField.studentCount: return item.copyWith(studentCount: value.toInt());
+      case WorkloadField.lectures: return item.copyWith(lectures: value);
+      case WorkloadField.practices: return item.copyWith(practices: value);
+      case WorkloadField.labs: return item.copyWith(labs: value);
+      case WorkloadField.exams: return item.copyWith(exams: value);
+      case WorkloadField.examConsults: return item.copyWith(examConsults: value);
+      case WorkloadField.tests: return item.copyWith(tests: value);
+      case WorkloadField.qualificationWorks: return item.copyWith(qualificationWorks: value);
+      case WorkloadField.certificationExams: return item.copyWith(certificationExams: value);
+      case WorkloadField.productionPractices: return item.copyWith(productionPractices: value);
+      case WorkloadField.teachingPractices: return item.copyWith(teachingPractices: value);
+      case WorkloadField.currentConsults: return item.copyWith(currentConsults: value);
+      case WorkloadField.individualWorks: return item.copyWith(individualWorks: value);
+      case WorkloadField.courseWorks: return item.copyWith(courseWorks: value);
+      case WorkloadField.postgraduateExams: return item.copyWith(postgraduateExams: value);
+    }
   }
 }
 
@@ -991,4 +1053,40 @@ enum WorkloadField {
   individualWorks,
   courseWorks,
   postgraduateExams,
+  ;
+
+  String getDisplayName() {
+    switch (this) {
+      case WorkloadField.studentCount:
+        return 'Кількість студентів';
+      case WorkloadField.lectures:
+        return 'Лекції';
+      case WorkloadField.practices:
+        return 'Практичні';
+      case WorkloadField.labs:
+        return 'Лабораторні';
+      case WorkloadField.exams:
+        return 'Екзамени';
+      case WorkloadField.examConsults:
+        return 'Консультації до екзаменів';
+      case WorkloadField.tests:
+        return 'Заліки';
+      case WorkloadField.qualificationWorks:
+        return 'Кваліфікаційні роботи';
+      case WorkloadField.certificationExams:
+        return 'Атестаційні екзамени';
+      case WorkloadField.productionPractices:
+        return 'Виробничі практики';
+      case WorkloadField.teachingPractices:
+        return 'Навчальні практики';
+      case WorkloadField.currentConsults:
+        return 'Поточні консультації';
+      case WorkloadField.individualWorks:
+        return 'Індивідуальні роботи';
+      case WorkloadField.courseWorks:
+        return 'Курсові роботи';
+      case WorkloadField.postgraduateExams:
+        return 'Кандидатські екзамени';
+    }
+  }
 }

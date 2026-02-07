@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 class AddWorkloadItemDialog extends StatefulWidget {
   final UniversityForm1 universityForm1;
   final UniversityForm3 universityForm3;
-  final void Function(UniversityForm3WorkloadItem) onAdd;
+  final Future<void> Function(UniversityForm3WorkloadItem) onAdd;
 
   const AddWorkloadItemDialog({
+    super.key,
     required this.universityForm1,
     required this.universityForm3,
     required this.onAdd,
@@ -221,7 +222,7 @@ class _AddWorkloadItemDialogState extends State<AddWorkloadItemDialog> {
         ElevatedButton(
           onPressed:
               _isValid
-                  ? () {
+                  ? () async {
                     final key = WorkloadKey(
                       disciplineName: _selectedDiscipline!,
                       learningForm: _selectedLearningForm!,
@@ -264,8 +265,10 @@ class _AddWorkloadItemDialogState extends State<AddWorkloadItemDialog> {
                       examConsults: isUsed ? 0 : form1Item.examConsults,
                     );
 
-                    widget.onAdd(newItem);
-                    Navigator.of(context).pop();
+                    await widget.onAdd(newItem);
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
                   }
                   : null,
           child: const Text('Додати'),

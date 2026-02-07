@@ -1,4 +1,5 @@
 import 'package:aw_flutter/features/workload_distribution/application/workload_distribution_project_service.dart';
+import 'package:aw_flutter/shared/errors/domain_error.dart';
 import 'package:aw_flutter/features/workload_distribution/domain/models/academic_semester.dart';
 
 import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
@@ -102,11 +103,6 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
     _setProjectTitleEditing(!_projectTitleEditing);
   }
 
-  void _setUniversityForm3(UniversityForm3 form3) async {
-    _project.updateForm3(form3);
-    await _workloadDistributionProjectService.update(_project);
-    await _refreshProject();
-  }
 
   void _setProjectTitle(String newTitle) async {
     await _workloadDistributionProjectService.setTitle(
@@ -327,33 +323,96 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                                     universityForm1: _project.universityForm1,
                                   )
                               : _displayMode == DisplayMode.form3
-                              ? _Form3Editor(
-                                project: _project,
-                                hintNotifier: _workloadHintNotifier,
-                                onChange: (UniversityForm3 newUniversityForm3) {
-                                  _setUniversityForm3(newUniversityForm3);
-                                },
-                                onCreateRate: (employeeId, rateValue, dateStart, dateEnd, postgraduateCount) async {
-                                  _project.createForm3Rate(employeeId, rateValue, dateStart, dateEnd, postgraduateCount);
-                                  await _workloadDistributionProjectService.update(_project);
-                                  await _refreshProject();
-                                },
-                                onRemoveRate: (employee, rate) async {
-                                  _project.removeForm3Rate(employee.id, rate);
-                                  await _workloadDistributionProjectService.update(_project);
-                                  await _refreshProject();
-                                },
-                                onAddEmployee: (employee) async {
-                                  _project.addForm3Employee(employee);
-                                  await _workloadDistributionProjectService.update(_project);
-                                  await _refreshProject();
-                                },
-                                onRemoveEmployee: (employee) async {
-                                  _project.removeForm3Employee(employee);
-                                  await _workloadDistributionProjectService.update(_project);
-                                  await _refreshProject();
-                                },
-                              )
+                               ? _Form3Editor(
+                                 project: _project,
+                                 hintNotifier: _workloadHintNotifier,
+                                 onUpdateField: (employeeId, rateId, itemId, field, newValue) async {
+                                   try {
+                                     _project.updateForm3WorkloadField(employeeId, rateId, itemId, field, newValue);
+                                     await _workloadDistributionProjectService.update(_project);
+                                     await _refreshProject();
+                                   } on DomainError catch (e) {
+                                     await _refreshProject();
+                                     if (mounted) {
+                                       ScaffoldMessenger.of(context).showSnackBar(
+                                         SnackBar(
+                                           content: Text(e.message),
+                                           backgroundColor: Theme.of(context).colorScheme.error,
+                                         ),
+                                       );
+                                     }
+                                   } catch (e) {
+                                     await _refreshProject();
+                                     if (mounted) {
+                                       ScaffoldMessenger.of(context).showSnackBar(
+                                         SnackBar(
+                                           content: Text('Помилка при оновленні.'),
+                                           backgroundColor: Theme.of(context).colorScheme.error,
+                                         ),
+                                       );
+                                     }
+                                   }
+                                 },
+                                 onUpdateGroups: (employeeId, rateId, itemId, groups) async {
+                                   _project.updateForm3WorkloadGroups(employeeId, rateId, itemId, groups);
+                                   await _workloadDistributionProjectService.update(_project);
+                                   await _refreshProject();
+                                 },
+                                 onDeleteItem: (employeeId, rateId, itemId) async {
+                                   _project.removeForm3WorkloadItem(employeeId, rateId, itemId);
+                                   await _workloadDistributionProjectService.update(_project);
+                                   await _refreshProject();
+                                 },
+                                 onAddItem: (employeeId, rateId, item) async {
+                                   try {
+                                     _project.addForm3WorkloadItem(employeeId, rateId, item);
+                                     await _workloadDistributionProjectService.update(_project);
+                                     await _refreshProject();
+                                   } on DomainError catch (e) {
+                                     await _refreshProject();
+                                     if (mounted) {
+                                       ScaffoldMessenger.of(context).showSnackBar(
+                                         SnackBar(
+                                           content: Text(e.message),
+                                           backgroundColor: Theme.of(context).colorScheme.error,
+                                         ),
+                                       );
+                                     }
+                                     rethrow;
+                                   } catch (e) {
+                                     await _refreshProject();
+                                     if (mounted) {
+                                       ScaffoldMessenger.of(context).showSnackBar(
+                                         SnackBar(
+                                           content: Text('Помилка при додаванні: $e'),
+                                           backgroundColor: Theme.of(context).colorScheme.error,
+                                         ),
+                                       );
+                                     }
+                                     rethrow;
+                                   }
+                                 },
+                                 onCreateRate: (employeeId, rateValue, dateStart, dateEnd, postgraduateCount) async {
+                                   _project.createForm3Rate(employeeId, rateValue, dateStart, dateEnd, postgraduateCount);
+                                   await _workloadDistributionProjectService.update(_project);
+                                   await _refreshProject();
+                                 },
+                                 onRemoveRate: (employee, rate) async {
+                                   _project.removeForm3Rate(employee.id, rate);
+                                   await _workloadDistributionProjectService.update(_project);
+                                   await _refreshProject();
+                                 },
+                                 onAddEmployee: (employee) async {
+                                   _project.addForm3Employee(employee);
+                                   await _workloadDistributionProjectService.update(_project);
+                                   await _refreshProject();
+                                 },
+                                 onRemoveEmployee: (employee) async {
+                                   _project.removeForm3Employee(employee);
+                                   await _workloadDistributionProjectService.update(_project);
+                                   await _refreshProject();
+                                 },
+                               )
                               : const Text('Unimplemented :('),
                     ),
                   ],
@@ -591,7 +650,10 @@ class _Form3Editor extends StatelessWidget {
   final WorkloadDistributionProject project;
   final ValueNotifier<String?> hintNotifier;
 
-  final void Function(UniversityForm3) onChange;
+  final Future<void> Function(String employeeId, String rateId, String itemId, WorkloadField field, double newValue) onUpdateField;
+  final void Function(String employeeId, String rateId, String itemId, List<String> groups) onUpdateGroups;
+  final void Function(String employeeId, String rateId, String itemId) onDeleteItem;
+  final Future<void> Function(String employeeId, String rateId, UniversityForm3WorkloadItem item) onAddItem;
   final void Function(String employeeId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) onCreateRate;
   final void Function(Employee employee, EmployeeRate rate) onRemoveRate;
   final void Function(Employee employee) onAddEmployee;
@@ -600,8 +662,11 @@ class _Form3Editor extends StatelessWidget {
   _Form3Editor({
     super.key,
     required this.project,
-    required this.onChange,
     required this.hintNotifier,
+    required this.onUpdateField,
+    required this.onUpdateGroups,
+    required this.onDeleteItem,
+    required this.onAddItem,
     required this.onCreateRate,
     required this.onRemoveRate,
     required this.onAddEmployee,
@@ -929,14 +994,9 @@ class _Form3Editor extends StatelessWidget {
                     return buildForm3DataRowEdit(
                       context: context,
                       workloadItem: workloadItem,
-                      onUpdate: (newItem) {
-                        universityForm3.replaceWorkloadItem(employee.id, rate, workloadItem, newItem);
-                        onChange(universityForm3);
-                      },
-                      onDelete: (itemToDelete) {
-                        universityForm3.removeWorkloadItem(employee.id, rate, itemToDelete);
-                        onChange(universityForm3);
-                      },
+                      onUpdateField: (field, value) => onUpdateField(employee.id, rate.id, workloadItem.id, field, value),
+                      onUpdateGroups: (groups) => onUpdateGroups(employee.id, rate.id, workloadItem.id, groups),
+                      onDelete: (itemToDelete) => onDeleteItem(employee.id, rate.id, itemToDelete.id),
                       project: project,
                       hintNotifier: hintNotifier,
                     );
@@ -952,9 +1012,8 @@ class _Form3Editor extends StatelessWidget {
                     builder: (context) => AddWorkloadItemDialog(
                       universityForm1: universityForm1,
                       universityForm3: universityForm3,
-                      onAdd: (newItem) {
-                        universityForm3.addWorkloadItem(employee.id, rate, newItem);
-                        onChange(universityForm3);
+                      onAdd: (newItem) async {
+                        await onAddItem(employee.id, rate.id, newItem);
                       },
                     ),
                   );
@@ -1007,7 +1066,8 @@ DataRow buildForm3DataRowView(
 DataRow buildForm3DataRowEdit({
   required BuildContext context,
   required UniversityForm3WorkloadItem workloadItem,
-  required void Function(UniversityForm3WorkloadItem) onUpdate,
+  required Future<void> Function(WorkloadField, double) onUpdateField,
+  required void Function(List<String>) onUpdateGroups,
   required void Function(UniversityForm3WorkloadItem) onDelete,
   required WorkloadDistributionProject project,
   required ValueNotifier<String?> hintNotifier,
@@ -1068,79 +1128,19 @@ DataRow buildForm3DataRowEdit({
     text: formatNumber(workloadItem.postgraduateExams),
   );
 
-  int parseNonNegativeInt(String text, int fallback) {
-    final value = int.tryParse(text);
-    return (value != null && value >= 0) ? value : fallback;
-  }
 
   double parseNonNegativeDouble(String text, double fallback) {
     final value = double.tryParse(text);
     return (value != null && value >= 0) ? value : fallback;
   }
 
-  void handleChange() {
-    final newItem = workloadItem.copyWith(
-      academicGroups:
-          academicGroupsController.text
-              .split(",")
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList(),
-      studentCount: parseNonNegativeInt(
-        studentCountController.text,
-        workloadItem.studentCount,
-      ),
-      lectures: parseNonNegativeDouble(
-        lecturesController.text,
-        workloadItem.lectures,
-      ),
-      practices: parseNonNegativeDouble(
-        practicesController.text,
-        workloadItem.practices,
-      ),
-      labs: parseNonNegativeDouble(labsController.text, workloadItem.labs),
-      exams: parseNonNegativeDouble(examsController.text, workloadItem.exams),
-      examConsults: parseNonNegativeDouble(
-        examConsultsController.text,
-        workloadItem.examConsults,
-      ),
-      tests: parseNonNegativeDouble(testsController.text, workloadItem.tests),
-      qualificationWorks: parseNonNegativeDouble(
-        qualificationWorksController.text,
-        workloadItem.qualificationWorks,
-      ),
-      certificationExams: parseNonNegativeDouble(
-        certificationExamsController.text,
-        workloadItem.certificationExams,
-      ),
-      productionPractices: parseNonNegativeDouble(
-        productionPracticesController.text,
-        workloadItem.productionPractices,
-      ),
-      teachingPractices: parseNonNegativeDouble(
-        teachingPracticesController.text,
-        workloadItem.teachingPractices,
-      ),
-      currentConsults: parseNonNegativeDouble(
-        currentConsultsController.text,
-        workloadItem.currentConsults,
-      ),
-      individualWorks: parseNonNegativeDouble(
-        individualWorksController.text,
-        workloadItem.individualWorks,
-      ),
-      courseWorks: parseNonNegativeDouble(
-        courseWorksController.text,
-        workloadItem.courseWorks,
-      ),
-      postgraduateExams: parseNonNegativeDouble(
-        postgraduateExamsController.text,
-        workloadItem.postgraduateExams,
-      ),
-    );
-
-    onUpdate(newItem);
+  void handleGroupsChange(List<String> newGroups) {
+    onUpdateGroups(newGroups);
   }
+
+   Future<void> handleFieldChange(WorkloadField field, double newValue) async {
+     await onUpdateField(field, newValue);
+   }
 
   DataCell _editableCell({
     required TextEditingController controller,
@@ -1167,7 +1167,16 @@ DataRow buildForm3DataRowEdit({
         project: project,
         hintNotifier: hintNotifier,
         workloadItem: workloadItem,
-        onEditingComplete: handleChange,
+        onEditingComplete: () {
+          if (field != null) {
+            handleFieldChange(
+              field,
+              numeric
+                  ? parseNonNegativeDouble(controller.text, workloadItem.getFieldValue(field))
+                  : 0.0,
+            );
+          }
+        },
       ),
     );
   }
@@ -1193,7 +1202,7 @@ DataRow buildForm3DataRowEdit({
                     initialGroups: workloadItem.academicGroups,
                     onSave: (newGroups) {
                       academicGroupsController.text = newGroups.join(", ");
-                      handleChange();
+                      handleGroupsChange(newGroups);
                     },
                   ),
             );
