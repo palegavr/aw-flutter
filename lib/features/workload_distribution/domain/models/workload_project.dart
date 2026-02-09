@@ -715,6 +715,12 @@ class Employee {
     );
   }
 
+  double get totalMinPossibleHours =>
+      rates.fold(0, (sum, rate) => sum + rate.minPossibleHours);
+
+  double get totalMaxPossibleHours =>
+      rates.fold(0, (sum, rate) => sum + rate.maxPossibleHours);
+
   String get fullName =>
       '$firstName $lastName${patronymic.isNotEmpty ? ' $patronymic' : ''}';
 
@@ -849,6 +855,17 @@ class EmployeeRate {
       workloadItems: workloadItems ?? this.workloadItems,
     );
   }
+
+  double _calculateMonths() {
+    final difference = dateEnd.difference(dateStart).inDays;
+    return difference / 30.0;
+  }
+
+  double get minPossibleHours =>
+      (580 * rateValue * (_calculateMonths() / 10)).roundToDouble();
+
+  double get maxPossibleHours =>
+      (600 * rateValue * (_calculateMonths() / 10)).roundToDouble();
 
   @override
   bool operator ==(Object other) =>
