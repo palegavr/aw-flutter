@@ -1284,6 +1284,7 @@ DataRow buildForm3DataRowEdit({
         numeric: true,
         fieldName: 'Пот. конс.',
         field: WorkloadField.currentConsults,
+        enableHint: true,
       ),
       _editableCell(
         controller: individualWorksController,
@@ -1296,6 +1297,7 @@ DataRow buildForm3DataRowEdit({
         numeric: true,
         fieldName: 'Курс. роботи',
         field: WorkloadField.courseWorks,
+        enableHint: true,
       ),
       _editableCell(
         controller: postgraduateExamsController,
