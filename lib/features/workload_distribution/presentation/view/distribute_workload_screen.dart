@@ -5,7 +5,7 @@ import 'package:aw_flutter/features/workload_distribution/domain/models/academic
 import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/add_workload_item_dialog.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/employee_form.dart';
-import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/rate_form.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/employee_rate_form.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/group_editor_dialog.dart';
 import 'package:aw_flutter/shared/date_time_extension.dart';
 import 'package:aw_flutter/src/rust/api/excel_interface.dart';
@@ -397,18 +397,49 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                                    await _workloadDistributionProjectService.update(_project);
                                    await _refreshProject();
                                  },
+                                 onUpdateRate: (employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount) async {
+                                   _project.updateForm3Rate(employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount);
+                                   await _workloadDistributionProjectService.update(_project);
+                                   await _refreshProject();
+                                 },
                                  onRemoveRate: (employee, rate) async {
                                    _project.removeForm3Rate(employee.id, rate);
                                    await _workloadDistributionProjectService.update(_project);
                                    await _refreshProject();
                                  },
-                                 onAddEmployee: (employee) async {
-                                   _project.addForm3Employee(employee);
+                                   onAddEmployee: (data) async {
+                                    final employee = Employee.create(
+                                      firstName: data.firstName,
+                                      lastName: data.lastName,
+                                      patronymic: data.patronymic,
+                                      rank: data.rank,
+                                      rates: [
+                                        if (data.rateData != null) 
+                                          EmployeeRate.create(
+                                            rateValue: data.rateData!.rateValue,
+                                            dateStart: data.rateData!.dateStart,
+                                            dateEnd: data.rateData!.dateEnd,
+                                            postgraduateCount: data.rateData!.postgraduateCount,
+                                          ),
+                                      ],
+                                    );
+                                    _project.addForm3Employee(employee);
+                                    await _workloadDistributionProjectService.update(_project);
+                                    await _refreshProject();
+                                  },
+                                 onRemoveEmployee: (employee) async {
+                                   _project.removeForm3Employee(employee);
                                    await _workloadDistributionProjectService.update(_project);
                                    await _refreshProject();
                                  },
-                                 onRemoveEmployee: (employee) async {
-                                   _project.removeForm3Employee(employee);
+                                 onUpdateEmployee: (employeeId, data) async {
+                                   _project.updateEmployeeDetails(
+                                     employeeId,
+                                     data.firstName,
+                                     data.lastName,
+                                     data.patronymic,
+                                     data.rank,
+                                   );
                                    await _workloadDistributionProjectService.update(_project);
                                    await _refreshProject();
                                  },
@@ -655,9 +686,11 @@ class _Form3Editor extends StatelessWidget {
   final void Function(String employeeId, String rateId, String itemId) onDeleteItem;
   final Future<void> Function(String employeeId, String rateId, UniversityForm3WorkloadItem item) onAddItem;
   final void Function(String employeeId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) onCreateRate;
+  final void Function(String employeeId, String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) onUpdateRate;
   final void Function(Employee employee, EmployeeRate rate) onRemoveRate;
-  final void Function(Employee employee) onAddEmployee;
+  final void Function(EmployeeFormData data) onAddEmployee;
   final void Function(Employee employee) onRemoveEmployee;
+  final void Function(String employeeId, EmployeeFormData data) onUpdateEmployee;
 
   _Form3Editor({
     super.key,
@@ -668,9 +701,11 @@ class _Form3Editor extends StatelessWidget {
     required this.onDeleteItem,
     required this.onAddItem,
     required this.onCreateRate,
+    required this.onUpdateRate,
     required this.onRemoveRate,
     required this.onAddEmployee,
     required this.onRemoveEmployee,
+    required this.onUpdateEmployee,
   });
 
   UniversityForm1 get universityForm1 => project.universityForm1;
@@ -688,8 +723,8 @@ class _Form3Editor extends StatelessWidget {
               const SizedBox(height: 16.0),
               EmployeeForm(
                 academicYear: universityForm1.academicYear,
-                onSubmit: (employee) {
-                  onAddEmployee(employee);
+                onSubmit: (data) {
+                  onAddEmployee(data);
                 },
               ),
             ],
@@ -712,8 +747,8 @@ class _Form3Editor extends StatelessWidget {
                     key: _employeeFormGlobalKey,
                     academicYear: universityForm1.academicYear,
                     withSubmitButton: false,
-                    onSubmit: (employee) {
-                      onAddEmployee(employee);
+                    onSubmit: (data) {
+                      onAddEmployee(data);
                     },
                   ),
                   actions: [
@@ -757,6 +792,48 @@ class _Form3Editor extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(employee.lastName),
+                              IconButton(
+                                iconSize: 18.0,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: const Icon(Icons.edit, size: 16.0),
+                                tooltip: 'Редагувати дані співробітника',
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      final editFormKey = GlobalKey<EmployeeFormState>();
+                                      return AlertDialog(
+                                        title: const Text('Редагувати співробітника'),
+                                        content: EmployeeForm(
+                                          key: editFormKey,
+                                          academicYear: universityForm1.academicYear,
+                                          initialData: EmployeeFormData.fromEmployee(employee),
+                                          showRateForm: false,
+                                          withSubmitButton: false,
+                                          onSubmit: (data) {
+                                            onUpdateEmployee(employee.id, data);
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('Скасувати'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              editFormKey.currentState?.submitForm();
+                                            },
+                                            child: const Text('Зберегти'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 4.0),
                               IconButton(
                                 iconSize: 18.0,
                                 padding: EdgeInsets.zero,
@@ -833,6 +910,54 @@ class _Form3Editor extends StatelessWidget {
                                             ],
                                           ),
                                         ),
+                                         IconButton(
+                                           icon: const Icon(Icons.edit_outlined),
+                                           tooltip: 'Редагувати дані ставки',
+                                           onPressed: () {
+                                             showDialog(
+                                               context: context,
+                                               builder: (context) {
+                                                 final editRateFormKey = GlobalKey<EmployeeRateFormState>();
+                                                 return AlertDialog(
+                                                   title: const Text('Редагувати ставку'),
+                                                   content: EmployeeRateForm(
+                                                     key: editRateFormKey,
+                                                     academicYear: universityForm1.academicYear,
+                                                     initialData: EmployeeRateFormData(
+                                                       rateValue: rate.rateValue,
+                                                       dateStart: rate.dateStart,
+                                                       dateEnd: rate.dateEnd,
+                                                       postgraduateCount: rate.postgraduateCount,
+                                                     ),
+                                                     onSubmit: (data) {
+                                                       onUpdateRate(
+                                                         employee.id,
+                                                         rate.id,
+                                                         data.rateValue,
+                                                         data.dateStart,
+                                                         data.dateEnd,
+                                                         data.postgraduateCount,
+                                                       );
+                                                       Navigator.pop(context);
+                                                     },
+                                                   ),
+                                                   actions: [
+                                                     TextButton(
+                                                       onPressed: () => Navigator.pop(context),
+                                                       child: const Text('Скасувати'),
+                                                     ),
+                                                     ElevatedButton(
+                                                       onPressed: () {
+                                                         editRateFormKey.currentState?.submitForm();
+                                                       },
+                                                       child: const Text('Зберегти'),
+                                                     ),
+                                                   ],
+                                                 );
+                                               },
+                                             );
+                                           },
+                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.delete_outline, color: Colors.red),
                                           tooltip: 'Видалити ставку',
@@ -886,14 +1011,20 @@ class _Form3Editor extends StatelessWidget {
                                   showDialog(
                                     context: context,
                                     builder: (context) {
-                                      final rateFormKey = GlobalKey<RateFormState>();
+                                      final rateFormKey = GlobalKey<EmployeeRateFormState>();
                                       return AlertDialog(
                                         title: const Text('Додати ставку'),
-                                        content: RateForm(
+                                        content: EmployeeRateForm(
                                           key: rateFormKey,
                                           academicYear: universityForm1.academicYear,
-                                          onSubmit: (rateValue, dateStart, dateEnd, postgraduateCount) {
-                                            onCreateRate(employee.id, rateValue, dateStart, dateEnd, postgraduateCount);
+                                          onSubmit: (data) {
+                                            onCreateRate(
+                                              employee.id,
+                                              data.rateValue,
+                                              data.dateStart,
+                                              data.dateEnd,
+                                              data.postgraduateCount,
+                                            );
                                             Navigator.pop(context);
                                           },
                                         ),

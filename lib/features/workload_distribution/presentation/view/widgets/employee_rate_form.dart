@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 
-class RateForm extends StatefulWidget {
+class EmployeeRateForm extends StatefulWidget {
   final int academicYear;
-  final void Function(double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) onSubmit;
+  final void Function(EmployeeRateFormData data) onSubmit;
+  final EmployeeRateFormData? initialData;
 
-  const RateForm({
+  const EmployeeRateForm({
     super.key,
     required this.academicYear,
     required this.onSubmit,
+    this.initialData,
   });
 
   @override
-  State<RateForm> createState() => RateFormState();
+  State<EmployeeRateForm> createState() => EmployeeRateFormState();
 }
 
-class RateFormState extends State<RateForm> {
+class EmployeeRateFormState extends State<EmployeeRateForm> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _rateValueController = TextEditingController();
   final TextEditingController _postgraduateCountController = TextEditingController();
@@ -24,10 +26,10 @@ class RateFormState extends State<RateForm> {
   @override
   void initState() {
     super.initState();
-    _rateValueController.text = '1.0';
-    _postgraduateCountController.text = '0';
-    _dateStart = DateTime(widget.academicYear, 9, 1);
-    _dateEnd = DateTime(widget.academicYear + 1, 6, 30);
+    _rateValueController.text = (widget.initialData?.rateValue ?? 1.0).toString();
+    _postgraduateCountController.text = (widget.initialData?.postgraduateCount ?? 0).toString();
+    _dateStart = widget.initialData?.dateStart ?? DateTime(widget.academicYear, 9, 1);
+    _dateEnd = widget.initialData?.dateEnd ?? DateTime(widget.academicYear + 1, 6, 30);
   }
 
   @override
@@ -40,10 +42,12 @@ class RateFormState extends State<RateForm> {
   void submitForm() {
     if (_formKey.currentState!.validate()) {
       widget.onSubmit(
-        double.parse(_rateValueController.text),
-        _dateStart!,
-        _dateEnd!,
-        int.parse(_postgraduateCountController.text),
+        EmployeeRateFormData(
+          rateValue: double.parse(_rateValueController.text),
+          dateStart: _dateStart!,
+          dateEnd: _dateEnd!,
+          postgraduateCount: int.parse(_postgraduateCountController.text),
+        ),
       );
     }
   }
@@ -148,4 +152,18 @@ class RateFormState extends State<RateForm> {
       ),
     );
   }
+}
+
+class EmployeeRateFormData {
+  final double rateValue;
+  final DateTime dateStart;
+  final DateTime dateEnd;
+  final int postgraduateCount;
+
+  EmployeeRateFormData({
+    required this.rateValue,
+    required this.dateStart,
+    required this.dateEnd,
+    required this.postgraduateCount,
+  });
 }

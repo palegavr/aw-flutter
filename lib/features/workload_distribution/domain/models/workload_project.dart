@@ -92,6 +92,11 @@ class WorkloadDistributionProject {
     _updatedAt = DateTime.now();
   }
 
+  void updateForm3Rate(String employeeId, String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+    _universityForm3.updateRate(employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount);
+    _updatedAt = DateTime.now();
+  }
+
   void removeForm3Rate(String employeeId, EmployeeRate rate) {
     _universityForm3.removeRate(employeeId, rate);
     _updatedAt = DateTime.now();
@@ -145,6 +150,11 @@ class WorkloadDistributionProject {
 
   void addForm3Employee(Employee employee) {
     _universityForm3.addEmployee(employee);
+    _updatedAt = DateTime.now();
+  }
+
+  void updateEmployeeDetails(String employeeId, String firstName, String lastName, String patronymic, EmployeeRank rank) {
+    _universityForm3.updateEmployeeDetails(employeeId, firstName, lastName, patronymic, rank);
     _updatedAt = DateTime.now();
   }
 
@@ -375,6 +385,18 @@ class UniversityForm3 {
     employees.add(newEmployee);
   }
 
+  void updateEmployeeDetails(String employeeId, String firstName, String lastName, String patronymic, EmployeeRank rank) {
+    final index = employees.indexWhere((e) => e.id == employeeId);
+    if (index != -1) {
+      employees[index] = employees[index].copyWith(
+        firstName: firstName,
+        lastName: lastName,
+        patronymic: patronymic,
+        rank: rank,
+      );
+    }
+  }
+
   UniversityForm3 copyWith({
     String? id,
     int? academicYear,
@@ -415,6 +437,11 @@ class UniversityForm3 {
   void removeRate(String employeeId, EmployeeRate rate) {
     final employee = employees.firstWhere((e) => e.id == employeeId);
     employee.removeRate(rate);
+  }
+
+  void updateRate(String employeeId, String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+    final employee = employees.firstWhere((e) => e.id == employeeId);
+    employee.updateRate(rateId, rateValue, dateStart, dateEnd, postgraduateCount);
   }
 
   void addWorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem newItem) {
@@ -771,6 +798,18 @@ class Employee {
 
   void addRate(EmployeeRate rate) {
     rates.add(rate);
+  }
+
+  void updateRate(String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+    final index = rates.indexWhere((r) => r.id == rateId);
+    if (index != -1) {
+      rates[index] = rates[index].copyWith(
+        rateValue: rateValue,
+        dateStart: dateStart,
+        dateEnd: dateEnd,
+        postgraduateCount: postgraduateCount,
+      );
+    }
   }
 }
 

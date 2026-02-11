@@ -1,16 +1,21 @@
 import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/view/widgets/employee_rate_form.dart';
 import 'package:flutter/material.dart';
 
 class EmployeeForm extends StatefulWidget {
-  final void Function(Employee) onSubmit;
+  final void Function(EmployeeFormData data) onSubmit;
   final bool withSubmitButton;
   final int academicYear;
+  final EmployeeFormData? initialData;
+  final bool showRateForm;
 
   const EmployeeForm({
     super.key,
     required this.onSubmit,
     required this.academicYear,
     this.withSubmitButton = true,
+    this.initialData,
+    this.showRateForm = true,
   });
 
   @override
@@ -33,10 +38,40 @@ class EmployeeFormState extends State<EmployeeForm> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialData != null) {
+      final data = widget.initialData!;
+      _firstNameController.text = data.firstName;
+      _lastNameController.text = data.lastName;
+      _patronymicController.text = data.patronymic;
+      _selectedRank = data.rank;
+
+      if (data.rateData != null) {
+        final rate = data.rateData!;
+        _rateValueController.text = rate.rateValue.toString();
+        _postgraduateCountController.text = rate.postgraduateCount.toString();
+        _dateStart = rate.dateStart;
+        _dateEnd = rate.dateEnd;
+        _isFullTime =
+            (rate.rateValue == 1.0 &&
+                rate.dateStart == DateTime(widget.academicYear, 9, 1) &&
+                rate.dateEnd == DateTime(widget.academicYear + 1, 6, 30));
+      } else {
+        _setDefaultRateValues();
+      }
+    } else {
+      _setDefaultRateValues();
+      _firstNameController.text = '';
+      _lastNameController.text = '';
+      _patronymicController.text = '';
+    }
+  }
+
+  void _setDefaultRateValues() {
     _rateValueController.text = '1.0';
     _postgraduateCountController.text = '0';
     _dateStart = DateTime(widget.academicYear, 9, 1);
     _dateEnd = DateTime(widget.academicYear + 1, 6, 30);
+    _isFullTime = true;
   }
 
   @override
@@ -51,43 +86,46 @@ class EmployeeFormState extends State<EmployeeForm> {
 
   void submitForm() {
     if (formKey.currentState!.validate()) {
-      double rateValue;
-      DateTime dateStart;
-      DateTime dateEnd;
+      EmployeeRateFormData? rateData;
 
-      if (_isFullTime) {
-        rateValue = 1.0;
-        dateStart = DateTime(widget.academicYear, 9, 1);
-        dateEnd = DateTime(widget.academicYear + 1, 6, 30);
-      } else {
-        if (_dateStart == null || _dateEnd == null) {
-          // This case should ideally be caught by validators, but for safety:
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Будь ласка, оберіть дати')),
-          );
-          return;
+      if (widget.showRateForm) {
+        double rateValue;
+        DateTime dateStart;
+        DateTime dateEnd;
+
+        if (_isFullTime) {
+          rateValue = 1.0;
+          dateStart = DateTime(widget.academicYear, 9, 1);
+          dateEnd = DateTime(widget.academicYear + 1, 6, 30);
+        } else {
+          if (_dateStart == null || _dateEnd == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Будь ласка, оберіть дати')),
+            );
+            return;
+          }
+          rateValue = double.parse(_rateValueController.text);
+          dateStart = _dateStart!;
+          dateEnd = _dateEnd!;
         }
-        rateValue = double.parse(_rateValueController.text);
-        dateStart = _dateStart!;
-        dateEnd = _dateEnd!;
+
+        rateData = EmployeeRateFormData(
+          rateValue: rateValue,
+          dateStart: dateStart,
+          dateEnd: dateEnd,
+          postgraduateCount: int.parse(_postgraduateCountController.text),
+        );
       }
 
-      final employee = Employee.create(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        patronymic: _patronymicController.text,
-        rank: _selectedRank!,
-        rates: [
-          EmployeeRate.create(
-            rateValue: rateValue,
-            dateStart: dateStart,
-            dateEnd: dateEnd,
-            postgraduateCount: int.parse(_postgraduateCountController.text),
-            workloadItems: [],
-          ),
-        ],
+      widget.onSubmit(
+        EmployeeFormData(
+          firstName: _firstNameController.text,
+          lastName: _lastNameController.text,
+          patronymic: _patronymicController.text,
+          rank: _selectedRank!,
+          rateData: rateData,
+        ),
       );
-      widget.onSubmit(employee);
     }
   }
 
@@ -183,85 +221,87 @@ class EmployeeFormState extends State<EmployeeForm> {
                 return null;
               },
             ),
-            const SizedBox(height: 16.0),
-            SwitchListTile(
-              title: const Text('Повна ставка'),
-              value: _isFullTime,
-              onChanged: (bool value) {
-                setState(() {
-                  _isFullTime = value;
-                });
-              },
-            ),
-            if (!_isFullTime) ...[
+            if (widget.showRateForm) ...[
+              const SizedBox(height: 16.0),
+              SwitchListTile(
+                title: const Text('Повна ставка'),
+                value: _isFullTime,
+                onChanged: (bool value) {
+                  setState(() {
+                    _isFullTime = value;
+                  });
+                },
+              ),
+              if (!_isFullTime) ...[
+                const SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _rateValueController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ставка',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null ||
+                        value.isEmpty ||
+                        double.tryParse(value) == null) {
+                      return 'Будь ласка, введіть числове значення';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Дата початку: ${_dateStart?.toLocal().toString().split(' ')[0] ?? 'Не обрано'}',
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _selectDate(context, true),
+                      child: const Text('Обрати'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Дата закінчення: ${_dateEnd?.toLocal().toString().split(' ')[0] ?? 'Не обрано'}',
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _selectDate(context, false),
+                      child: const Text('Обрати'),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 16.0),
               TextFormField(
-                controller: _rateValueController,
+                controller: _postgraduateCountController,
                 decoration: const InputDecoration(
-                  labelText: 'Ставка',
+                  labelText: 'Кількість аспірантів',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null ||
-                      value.isEmpty ||
-                      double.tryParse(value) == null) {
-                    return 'Будь ласка, введіть числове значення';
+                  if (value == null || value.isEmpty) {
+                    return 'Будь ласка, введіть ціле число';
+                  }
+                  final intValue = int.tryParse(value);
+                  if (intValue == null) {
+                    return 'Будь ласка, введіть ціле число';
+                  }
+                  if (intValue < 0) {
+                    return 'Кількість не може бути від\'ємною';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 16.0),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Дата початку: ${_dateStart?.toLocal().toString().split(' ')[0] ?? 'Не обрано'}',
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _selectDate(context, true),
-                    child: const Text('Обрати'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16.0),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Дата закінчення: ${_dateEnd?.toLocal().toString().split(' ')[0] ?? 'Не обрано'}',
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _selectDate(context, false),
-                    child: const Text('Обрати'),
-                  ),
-                ],
-              ),
             ],
-            const SizedBox(height: 16.0),
-            TextFormField(
-              controller: _postgraduateCountController,
-              decoration: const InputDecoration(
-                labelText: 'Кількість аспірантів',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Будь ласка, введіть ціле число';
-                }
-                final intValue = int.tryParse(value);
-                if (intValue == null) {
-                  return 'Будь ласка, введіть ціле число';
-                }
-                if (intValue < 0) {
-                  return 'Кількість не може бути від\'ємною';
-                }
-                return null;
-              },
-            ),
             if (widget.withSubmitButton)
               Column(
                 children: [
@@ -279,6 +319,39 @@ class EmployeeFormState extends State<EmployeeForm> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class EmployeeFormData {
+  final String firstName;
+  final String lastName;
+  final String patronymic;
+  final EmployeeRank rank;
+  final EmployeeRateFormData? rateData;
+
+  EmployeeFormData({
+    required this.firstName,
+    required this.lastName,
+    required this.patronymic,
+    required this.rank,
+    this.rateData,
+  });
+
+  factory EmployeeFormData.fromEmployee(Employee employee) {
+    return EmployeeFormData(
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      patronymic: employee.patronymic,
+      rank: employee.rank,
+      rateData: employee.rates.isNotEmpty
+          ? EmployeeRateFormData(
+              rateValue: employee.rates.first.rateValue,
+              dateStart: employee.rates.first.dateStart,
+              dateEnd: employee.rates.first.dateEnd,
+              postgraduateCount: employee.rates.first.postgraduateCount,
+            )
+          : null,
     );
   }
 }
