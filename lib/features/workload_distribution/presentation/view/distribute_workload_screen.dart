@@ -211,6 +211,43 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
     }
   }
 
+  void _showViolationsDialog(BuildContext context, List<DistributionRuleViolation> violations) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error),
+              const SizedBox(width: 8),
+              Text('Помилки розподілу (${violations.length})'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: violations.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final v = violations[index];
+                return ListTile(
+                  title: Text(v.message, style: const TextStyle(fontSize: 13)),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Закрити'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -293,6 +330,50 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                 alignment: Alignment.topCenter,
                 child: Column(
                   children: [
+                    Builder(
+                      builder: (context) {
+                        final violations = _project.distributionRuleViolations;
+                        if (violations.isEmpty) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          child: Material(
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => _showViolationsDialog(context, violations),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Помилки розподілу: ${violations.length}',
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onErrorContainer,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
+                                      size: 14,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                     ToggleButtons(
                       isSelected: [
                         _displayMode == DisplayMode.form1,

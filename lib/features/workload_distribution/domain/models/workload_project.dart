@@ -8,7 +8,6 @@ import 'package:aw_flutter/src/rust/excel/data.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'workload_project.freezed.dart';
 part 'workload_project.g.dart';
 
 @JsonSerializable(explicitToJson: true)
@@ -36,6 +35,30 @@ class WorkloadDistributionProject {
   UniversityForm1 get universityForm1 => _universityForm1;
   UniversityForm3 get universityForm3 => _universityForm3;
   DateTime get updatedAt => _updatedAt;
+
+  List<DistributionRuleViolation> get distributionRuleViolations {
+    final violations = <DistributionRuleViolation>[];
+
+    // Pre-compute employee sets by field and workload key
+    final lecturesByKey = _getEmployeeIdsByWorkloadKey(WorkloadField.lectures);
+    final labsByKey = _getEmployeeIdsByWorkloadKey(WorkloadField.labs);
+    final practicesByKey = _getEmployeeIdsByWorkloadKey(WorkloadField.practices);
+    final examsByKey = _getEmployeeIdsByWorkloadKey(WorkloadField.exams);
+
+    _checkRule1(violations);
+    _checkRule2(violations);
+    _checkRule3And4(violations, lecturesByKey);
+    _checkRule6(violations);
+    _checkRule8(violations, labsByKey);
+    _checkRule9(violations, lecturesByKey);
+    _checkRule10(violations, examsByKey);
+    _checkRule12(violations);
+    _checkRule15(violations);
+    _checkRule24(violations, lecturesByKey, labsByKey, practicesByKey);
+    _checkRule27(violations);
+
+    return violations;
+  }
 
   factory WorkloadDistributionProject.fromJson(Map<String, dynamic> json) =>
       _$WorkloadDistributionProjectFromJson(json);
@@ -218,6 +241,389 @@ class WorkloadDistributionProject {
       case WorkloadField.postgraduateExams: return item.copyWith(postgraduateExams: value);
     }
   }
+
+  // ── Distribution Rule Violation Checks ─────────────────────────────
+
+  /// DIST-RULE-1: Розподілені години по кожному типу навантаження
+  /// повинні дорівнювати значенню форми 1.
+  void _checkRule1(List<DistributionRuleViolation> violations) {
+    final fieldsToCheck = WorkloadField.values
+        .where((f) => f != WorkloadField.studentCount);
+
+    for (final form1Item in _universityForm1.workloadItems) {
+      for (final field in fieldsToCheck) {
+        final total = form1Item.getFieldValue(field);
+        if (total == 0) continue;
+
+        final undistributed =
+            getUndistributedWorkload(form1Item.workloadKey, field);
+        if (undistributed.abs() > 0) {
+          final key = form1Item.workloadKey;
+          final distributed = total - undistributed;
+          violations.add(DistributionRuleViolation(
+            ruleId: 'DIST-RULE-1',
+            message: '${key.displayName}: ${field.getDisplayName()} — '
+                'розподілено ${_fmt(distributed)} з ${_fmt(total)} год.',
+          ));
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-2: Сумарне навантаження НПП за всіма ставками має
+  /// потрапляти у діапазон [minPossibleHours; maxPossibleHours].
+  void _checkRule2(List<DistributionRuleViolation> violations) {
+    for (final employee in _universityForm3.employees) {
+      if (employee.rates.isEmpty) continue;
+
+      double totalHours = 0;
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          totalHours += _sumAllFields(item);
+        }
+      }
+
+      final minH = employee.totalMinPossibleHours;
+      final maxH = employee.totalMaxPossibleHours;
+
+      if (totalHours < minH - 0.001) {
+        violations.add(DistributionRuleViolation(
+          ruleId: 'DIST-RULE-2',
+          message: '${employee.fullName}: навантаження ${_fmt(totalHours)} год. '
+              'менше мінімуму ${_fmt(minH)} год.',
+        ));
+      } else if (totalHours > maxH + 0.001) {
+        violations.add(DistributionRuleViolation(
+          ruleId: 'DIST-RULE-2',
+          message: '${employee.fullName}: навантаження ${_fmt(totalHours)} год. '
+              'перевищує максимум ${_fmt(maxH)} год.',
+        ));
+      }
+    }
+  }
+
+  /// DIST-RULE-3 / DIST-RULE-4: Лекції одного потоку — одному НПП,
+  /// або щонайбільше двом, якщо загальна кількість годин парна.
+  void _checkRule3And4(
+    List<DistributionRuleViolation> violations,
+    Map<WorkloadKey, Set<String>> lecturesByKey,
+  ) {
+    for (final entry in lecturesByKey.entries) {
+      final key = entry.key;
+      final ids = entry.value;
+
+      if (ids.length > 2) {
+        violations.add(DistributionRuleViolation(
+          ruleId: 'DIST-RULE-4',
+          message: '${key.displayName}: лекції призначені ${ids.length} НПП '
+              '(максимум 2).',
+        ));
+      } else if (ids.length == 2) {
+        final form1Item = _findForm1Item(key);
+        if (form1Item != null) {
+          final total = form1Item.getFieldValue(WorkloadField.lectures);
+          if (total % 2 != 0) {
+            violations.add(DistributionRuleViolation(
+              ruleId: 'DIST-RULE-4',
+              message: '${key.displayName}: лекції розподілені між 2 НПП, '
+                  'але загальна кількість годин (${_fmt(total)}) не є парною.',
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-6: Навантаження НПП з практичних має бути кратним
+  /// кількості годин на одну групу.
+  void _checkRule6(List<DistributionRuleViolation> violations) {
+    for (final employee in _universityForm3.employees) {
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.practices <= 0) continue;
+
+          final form1Item = _findForm1Item(item.workloadKey);
+          if (form1Item == null || form1Item.practicesPlanned <= 0) continue;
+
+          final hpg = form1Item.practicesPlanned;
+          if ((item.practices % hpg).abs() > 0.001) {
+            final k = item.workloadKey;
+            violations.add(DistributionRuleViolation(
+              ruleId: 'DIST-RULE-6',
+              message: '${k.displayName}: ${employee.fullName} — практичні '
+                  '${_fmt(item.practices)} год. не кратні '
+                  '${_fmt(hpg)} (годин на групу).',
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-8: Лабораторні можуть бути розподілені між щонайбільше
+  /// двома НПП, але тільки якщо загальна кількість годин парна.
+  void _checkRule8(
+    List<DistributionRuleViolation> violations,
+    Map<WorkloadKey, Set<String>> labsByKey,
+  ) {
+    for (final entry in labsByKey.entries) {
+      final key = entry.key;
+      final ids = entry.value;
+
+      if (ids.length > 2) {
+        violations.add(DistributionRuleViolation(
+          ruleId: 'DIST-RULE-8',
+          message: '${key.displayName}: лабораторні призначені ${ids.length} НПП '
+              '(максимум 2).',
+        ));
+      } else if (ids.length == 2) {
+        final form1Item = _findForm1Item(key);
+        if (form1Item != null) {
+          final total = form1Item.getFieldValue(WorkloadField.labs);
+          if (total % 2 != 0) {
+            violations.add(DistributionRuleViolation(
+              ruleId: 'DIST-RULE-8',
+              message: '${key.displayName}: лабораторні розподілені між 2 НПП, '
+                  'але загальна кількість годин (${_fmt(total)}) не є парною.',
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-9: Екзамен призначається виключно тому НПП,
+  /// який читає лекції.
+  void _checkRule9(
+    List<DistributionRuleViolation> violations,
+    Map<WorkloadKey, Set<String>> lecturesByKey,
+  ) {
+    for (final employee in _universityForm3.employees) {
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.exams <= 0) continue;
+
+          final lecturers = lecturesByKey[item.workloadKey] ?? {};
+          if (!lecturers.contains(employee.id)) {
+            final k = item.workloadKey;
+            violations.add(DistributionRuleViolation(
+              ruleId: 'DIST-RULE-9',
+              message: '${k.displayName}: ${employee.fullName} призначений '
+                  'на екзамен, але не читає лекції.',
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-10: Консультації перед екзаменом призначаються виключно
+  /// тому НПП, який проводить екзамен.
+  void _checkRule10(
+    List<DistributionRuleViolation> violations,
+    Map<WorkloadKey, Set<String>> examsByKey,
+  ) {
+    for (final employee in _universityForm3.employees) {
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.examConsults <= 0) continue;
+
+          final examiners = examsByKey[item.workloadKey] ?? {};
+          if (!examiners.contains(employee.id)) {
+            final k = item.workloadKey;
+            violations.add(DistributionRuleViolation(
+              ruleId: 'DIST-RULE-10',
+              message: '${k.displayName}: ${employee.fullName} призначений '
+                  'на консультації перед екзаменом, але не проводить екзамен.',
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-12: Кваліфікаційні роботи — лише доцент, професор
+  /// або завідувач.
+  void _checkRule12(List<DistributionRuleViolation> violations) {
+    const allowed = {
+      EmployeeRank.associate,
+      EmployeeRank.professor,
+      EmployeeRank.head,
+    };
+
+    for (final employee in _universityForm3.employees) {
+      if (allowed.contains(employee.rank)) continue;
+
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.qualificationWorks > 0) {
+            violations.add(DistributionRuleViolation(
+              ruleId: 'DIST-RULE-12',
+              message: '${item.workloadKey.displayName}: '
+                  '${employee.fullName} (${employee.rank.displayName}) '
+                  'не може керувати кваліфікаційними роботами — '
+                  'дозволено лише доцентам, професорам та завідувачам.',
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-15: Не більше 8 дипломників-бакалаврів на одного
+  /// керівника (3 год. на дипломника у 2 семестрі).
+  void _checkRule15(List<DistributionRuleViolation> violations) {
+    for (final employee in _universityForm3.employees) {
+      double totalQualHoursSem2 = 0;
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.qualificationWorks > 0 &&
+              item.workloadKey.semester == AcademicSemester.second) {
+            totalQualHoursSem2 += item.qualificationWorks;
+          }
+        }
+      }
+
+      if (totalQualHoursSem2 > 0) {
+        final students = (totalQualHoursSem2 / 3).ceil();
+        if (students > 8) {
+          violations.add(DistributionRuleViolation(
+            ruleId: 'DIST-RULE-15',
+            message: '${employee.fullName}: кількість дипломників-бакалаврів '
+                '($students) перевищує максимум 8.',
+          ));
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-24: Поточні консультації — лише НПП, що веде лекції,
+  /// лабораторні або практичні у цьому елементі навантаження.
+  void _checkRule24(
+    List<DistributionRuleViolation> violations,
+    Map<WorkloadKey, Set<String>> lecturesByKey,
+    Map<WorkloadKey, Set<String>> labsByKey,
+    Map<WorkloadKey, Set<String>> practicesByKey,
+  ) {
+    for (final employee in _universityForm3.employees) {
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.currentConsults <= 0) continue;
+
+          final key = item.workloadKey;
+          final hasLectures =
+              (lecturesByKey[key] ?? {}).contains(employee.id);
+          final hasLabs =
+              (labsByKey[key] ?? {}).contains(employee.id);
+          final hasPractices =
+              (practicesByKey[key] ?? {}).contains(employee.id);
+
+          if (!hasLectures && !hasLabs && !hasPractices) {
+            violations.add(DistributionRuleViolation(
+              ruleId: 'DIST-RULE-24',
+              message: '${key.displayName}: ${employee.fullName} отримав '
+                  'поточні консультації, але не веде лекцій, '
+                  'практичних чи лабораторних.',
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /// DIST-RULE-27: Не більше 30 курсових з однієї дисципліни
+  /// на одного НПП (при 3 год./студент — макс. 90 год.).
+  void _checkRule27(List<DistributionRuleViolation> violations) {
+    for (final employee in _universityForm3.employees) {
+      final cwByKey = <WorkloadKey, double>{};
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.courseWorks > 0) {
+            cwByKey.update(
+              item.workloadKey,
+              (v) => v + item.courseWorks,
+              ifAbsent: () => item.courseWorks,
+            );
+          }
+        }
+      }
+
+      for (final entry in cwByKey.entries) {
+        final key = entry.key;
+        final hours = entry.value;
+        // 3 год./студент (КР) — найсуворіший ліміт
+        final students = (hours / 3).ceil();
+        if (students > 30) {
+          violations.add(DistributionRuleViolation(
+            ruleId: 'DIST-RULE-27',
+            message: '${key.displayName}: ${employee.fullName} — '
+                'кількість курсових ($students) перевищує максимум 30.',
+          ));
+        }
+      }
+    }
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────
+
+  UniversityForm1WorkloadItem? _findForm1Item(WorkloadKey key) {
+    for (final item in _universityForm1.workloadItems) {
+      if (item.workloadKey == key) return item;
+    }
+    return null;
+  }
+
+  /// Повертає Map<WorkloadKey, Set<employeeId>> для НПП, у яких
+  /// значення [field] > 0.
+  Map<WorkloadKey, Set<String>> _getEmployeeIdsByWorkloadKey(
+    WorkloadField field,
+  ) {
+    final map = <WorkloadKey, Set<String>>{};
+    for (final employee in _universityForm3.employees) {
+      for (final rate in employee.rates) {
+        for (final item in rate.workloadItems) {
+          if (item.getFieldValue(field) > 0) {
+            map.putIfAbsent(item.workloadKey, () => {});
+            map[item.workloadKey]!.add(employee.id);
+          }
+        }
+      }
+    }
+    return map;
+  }
+
+  static double _sumAllFields(UniversityForm3WorkloadItem item) {
+    return item.lectures +
+        item.practices +
+        item.labs +
+        item.exams +
+        item.examConsults +
+        item.tests +
+        item.qualificationWorks +
+        item.certificationExams +
+        item.productionPractices +
+        item.teachingPractices +
+        item.currentConsults +
+        item.individualWorks +
+        item.courseWorks +
+        item.postgraduateExams;
+  }
+
+  static String _fmt(double value) {
+    return value % 1 == 0
+        ? value.toInt().toString()
+        : value.toStringAsFixed(2);
+  }
+}
+
+class DistributionRuleViolation {
+  final String ruleId;
+  final String message;
+
+  const DistributionRuleViolation({
+    required this.ruleId,
+    required this.message,
+  });
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -676,18 +1082,58 @@ class UniversityForm1WorkloadItem {
   int get hashCode => id.hashCode;
 }
 
-@freezed
-abstract class WorkloadKey with _$WorkloadKey {
-  const factory WorkloadKey({
+@JsonSerializable(explicitToJson: true)
+class WorkloadKey {
+  final LearningForm _learningForm;
+  final String _specialty;
+  final String _disciplineName;
+  final String _course;
+  final AcademicSemester _semester;
+
+  const WorkloadKey({
     required LearningForm learningForm,
     required String specialty,
     required String disciplineName,
     required String course,
     required AcademicSemester semester,
-  }) = _WorkloadKey;
+  }) : _learningForm = learningForm,
+       _specialty = specialty,
+       _disciplineName = disciplineName,
+       _course = course,
+       _semester = semester;
+
+  LearningForm get learningForm => _learningForm;
+  String get specialty => _specialty;
+  String get disciplineName => _disciplineName;
+  String get course => _course;
+  AcademicSemester get semester => _semester;
 
   factory WorkloadKey.fromJson(Map<String, dynamic> json) =>
       _$WorkloadKeyFromJson(json);
+
+  Map<String, dynamic> toJson() => _$WorkloadKeyToJson(this);
+
+  String get displayName =>
+      '$disciplineName ($specialty, ${learningForm.shortDisplayName}, к.$course, сем.$semester)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkloadKey &&
+          runtimeType == other.runtimeType &&
+          learningForm == other.learningForm &&
+          specialty == other.specialty &&
+          disciplineName == other.disciplineName &&
+          course == other.course &&
+          semester == other.semester);
+
+  @override
+  int get hashCode =>
+      learningForm.hashCode ^
+      specialty.hashCode ^
+      disciplineName.hashCode ^
+      course.hashCode ^
+      semester.hashCode;
 }
 
 enum EmployeeRank {
