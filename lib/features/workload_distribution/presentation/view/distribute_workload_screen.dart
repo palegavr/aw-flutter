@@ -70,7 +70,7 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
   }
 
   void _postConstruct() async {
-    await Future.delayed(const Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 1));
     await _refreshProject();
   }
 
