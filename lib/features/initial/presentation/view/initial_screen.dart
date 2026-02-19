@@ -1,6 +1,7 @@
 import 'package:aw_flutter/features/archive/presentation/view/archive_entries_screen.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/distribute_workload_projects_screen.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/view/import_screen.dart';
+import 'package:aw_flutter/shared/app_version.dart';
 import 'package:aw_flutter/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -34,9 +35,14 @@ class InitialScreen extends StatelessWidget {
           Positioned(
             right: defaultSpacing,
             top: defaultSpacing,
-            child: TextButton(
-              onPressed: () {},
-              child: const Text('Google Drive'),
+            child: Column(
+              children: [
+                Text(appVersion),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text('Google Drive'),
+                ),
+              ],
             ),
           ),
           // Centered action buttons

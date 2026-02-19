@@ -3,9 +3,11 @@ import 'package:aw_flutter/features/workload_distribution/presentation/bloc/impo
 import 'package:aw_flutter/src/rust/frb_generated.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aw_flutter/shared/app_version.dart';
 
 Future<void> main() async {
   await RustLib.init();
+  await initAppVersion();
   runApp(
     MultiBlocProvider(
       providers: [BlocProvider(create: (_) => ImportBloc())],
