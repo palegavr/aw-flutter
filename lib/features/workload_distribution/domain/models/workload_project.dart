@@ -13,28 +13,20 @@ part 'workload_project.g.dart';
 @JsonSerializable(explicitToJson: true)
 class WorkloadDistributionProject {
   final int id;
-  String _title;
-  UniversityForm1 _universityForm1;
-  UniversityForm3 _universityForm3;
+  final String title;
+  final UniversityForm1 universityForm1;
+  final UniversityForm3 universityForm3;
   final DateTime createdAt;
-  DateTime _updatedAt;
+  final DateTime updatedAt;
 
-  WorkloadDistributionProject({
+  const WorkloadDistributionProject({
     required this.id,
-    required String title,
-    required UniversityForm1 universityForm1,
-    required UniversityForm3 universityForm3,
+    required this.title,
+    required this.universityForm1,
+    required this.universityForm3,
     required this.createdAt,
-    required DateTime updatedAt,
-  }) : _title = title,
-       _universityForm1 = universityForm1,
-       _universityForm3 = universityForm3,
-       _updatedAt = updatedAt;
-
-  String get title => _title;
-  UniversityForm1 get universityForm1 => _universityForm1;
-  UniversityForm3 get universityForm3 => _universityForm3;
-  DateTime get updatedAt => _updatedAt;
+    required this.updatedAt,
+  });
 
   List<DistributionRuleViolation> get distributionRuleViolations {
     final violations = <DistributionRuleViolation>[];
@@ -92,18 +84,34 @@ class WorkloadDistributionProject {
   @override
   int get hashCode => id.hashCode;
 
-  void changeTitle(String newTitle) {
-    _title = newTitle;
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject copyWith({
+    int? id,
+    String? title,
+    UniversityForm1? universityForm1,
+    UniversityForm3? universityForm3,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return WorkloadDistributionProject(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      universityForm1: universityForm1 ?? this.universityForm1,
+      universityForm3: universityForm3 ?? this.universityForm3,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 
-  void updateForm1(UniversityForm1 form1) {
-    _universityForm1 = form1;
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject changeTitle(String newTitle) {
+    return copyWith(title: newTitle, updatedAt: DateTime.now());
+  }
+
+  WorkloadDistributionProject updateForm1(UniversityForm1 form1) {
+    return copyWith(universityForm1: form1, updatedAt: DateTime.now());
   }
 
 
-  void createForm3Rate(String employeeId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+  WorkloadDistributionProject createForm3Rate(String employeeId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
     final rate = EmployeeRate.create(
       rateValue: rateValue,
       dateStart: dateStart,
@@ -111,21 +119,27 @@ class WorkloadDistributionProject {
       postgraduateCount: postgraduateCount,
       workloadItems: [],
     );
-    _universityForm3.addRate(employeeId, rate);
-    _updatedAt = DateTime.now();
+    return copyWith(
+      universityForm3: universityForm3.addRate(employeeId, rate),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void updateForm3Rate(String employeeId, String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
-    _universityForm3.updateRate(employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount);
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject updateForm3Rate(String employeeId, String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+    return copyWith(
+      universityForm3: universityForm3.updateRate(employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void removeForm3Rate(String employeeId, EmployeeRate rate) {
-    _universityForm3.removeRate(employeeId, rate);
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject removeForm3Rate(String employeeId, EmployeeRate rate) {
+    return copyWith(
+      universityForm3: universityForm3.removeRate(employeeId, rate),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void addForm3WorkloadItem(String employeeId, String rateId, UniversityForm3WorkloadItem newItem) {
+  WorkloadDistributionProject addForm3WorkloadItem(String employeeId, String rateId, UniversityForm3WorkloadItem newItem) {
     for (final field in WorkloadField.values) {
       final val = newItem.getFieldValue(field);
       if (val > 0) {
@@ -133,14 +147,14 @@ class WorkloadDistributionProject {
       }
     }
 
-    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
-    final rate = employee.rates.firstWhere((r) => r.id == rateId);
-    rate.addWorkloadItem(newItem);
-    _updatedAt = DateTime.now();
+    return copyWith(
+      universityForm3: universityForm3.addWorkloadItem(employeeId, rateId, newItem),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void updateForm3WorkloadField(String employeeId, String rateId, String itemId, WorkloadField field, double newValue) {
-    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
+  WorkloadDistributionProject updateForm3WorkloadField(String employeeId, String rateId, String itemId, WorkloadField field, double newValue) {
+    final employee = universityForm3.employees.firstWhere((e) => e.id == employeeId);
     final rate = employee.rates.firstWhere((r) => r.id == rateId);
     final itemIndex = rate.workloadItems.indexWhere((i) => i.id == itemId);
     if (itemIndex == -1) throw DomainError("Навантаження не знайдено");
@@ -150,44 +164,62 @@ class WorkloadDistributionProject {
 
     _checkWorkloadLimit(item.workloadKey, field, newValue, oldValue);
 
-    rate.workloadItems[itemIndex] = _setItemFieldValue(item, field, newValue);
-    _updatedAt = DateTime.now();
+    return copyWith(
+      universityForm3: universityForm3.updateWorkloadItem(
+        employeeId,
+        rateId,
+        _setItemFieldValue(item, field, newValue),
+      ),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void updateForm3WorkloadGroups(String employeeId, String rateId, String itemId, List<String> groups) {
-    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
+  WorkloadDistributionProject updateForm3WorkloadGroups(String employeeId, String rateId, String itemId, List<String> groups) {
+    final employee = universityForm3.employees.firstWhere((e) => e.id == employeeId);
     final rate = employee.rates.firstWhere((r) => r.id == rateId);
     final itemIndex = rate.workloadItems.indexWhere((i) => i.id == itemId);
-    if (itemIndex != -1) {
-      rate.workloadItems[itemIndex] = rate.workloadItems[itemIndex].copyWith(academicGroups: groups);
-      _updatedAt = DateTime.now();
-    }
+    if (itemIndex == -1) return this;
+
+    return copyWith(
+      universityForm3: universityForm3.updateWorkloadItem(
+        employeeId,
+        rateId,
+        rate.workloadItems[itemIndex].copyWith(academicGroups: groups),
+      ),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void removeForm3WorkloadItem(String employeeId, String rateId, String itemId) {
-    final employee = _universityForm3.employees.firstWhere((e) => e.id == employeeId);
-    final rate = employee.rates.firstWhere((r) => r.id == rateId);
-    rate.workloadItems.removeWhere((i) => i.id == itemId);
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject removeForm3WorkloadItem(String employeeId, String rateId, String itemId) {
+    return copyWith(
+      universityForm3: universityForm3.removeWorkloadItem(employeeId, rateId, itemId),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void addForm3Employee(Employee employee) {
-    _universityForm3.addEmployee(employee);
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject addForm3Employee(Employee employee) {
+    return copyWith(
+      universityForm3: universityForm3.addEmployee(employee),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void updateEmployeeDetails(String employeeId, String firstName, String lastName, String patronymic, EmployeeRank rank) {
-    _universityForm3.updateEmployeeDetails(employeeId, firstName, lastName, patronymic, rank);
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject updateEmployeeDetails(String employeeId, String firstName, String lastName, String patronymic, EmployeeRank rank) {
+    return copyWith(
+      universityForm3: universityForm3.updateEmployeeDetails(employeeId, firstName, lastName, patronymic, rank),
+      updatedAt: DateTime.now(),
+    );
   }
 
-  void removeForm3Employee(Employee employee) {
-    _universityForm3.removeEmployee(employee);
-    _updatedAt = DateTime.now();
+  WorkloadDistributionProject removeForm3Employee(Employee employee) {
+    return copyWith(
+      universityForm3: universityForm3.removeEmployee(employee),
+      updatedAt: DateTime.now(),
+    );
   }
 
   double getTotalWorkload(WorkloadKey key, WorkloadField field) {
-    final item = _universityForm1.workloadItems.firstWhere(
+    final item = universityForm1.workloadItems.firstWhere(
       (item) => item.workloadKey == key,
     );
     return item.getFieldValue(field);
@@ -196,7 +228,7 @@ class WorkloadDistributionProject {
   double getUndistributedWorkload(WorkloadKey key, WorkloadField field) {
     final total = getTotalWorkload(key, field);
     double distributed = 0;
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
           if (item.workloadKey == key) {
@@ -250,7 +282,7 @@ class WorkloadDistributionProject {
     final fieldsToCheck = WorkloadField.values
         .where((f) => f != WorkloadField.studentCount);
 
-    for (final form1Item in _universityForm1.workloadItems) {
+    for (final form1Item in universityForm1.workloadItems) {
       for (final field in fieldsToCheck) {
         final total = form1Item.getFieldValue(field);
         if (total == 0) continue;
@@ -273,7 +305,7 @@ class WorkloadDistributionProject {
   /// DIST-RULE-2: Сумарне навантаження НПП за всіма ставками має
   /// потрапляти у діапазон [minPossibleHours; maxPossibleHours].
   void _checkRule2(List<DistributionRuleViolation> violations) {
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       if (employee.rates.isEmpty) continue;
 
       double totalHours = 0;
@@ -337,7 +369,7 @@ class WorkloadDistributionProject {
   /// DIST-RULE-6: Навантаження НПП з практичних має бути кратним
   /// кількості годин на одну групу.
   void _checkRule6(List<DistributionRuleViolation> violations) {
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
           if (item.practices <= 0) continue;
@@ -398,7 +430,7 @@ class WorkloadDistributionProject {
     List<DistributionRuleViolation> violations,
     Map<WorkloadKey, Set<String>> lecturesByKey,
   ) {
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
           if (item.exams <= 0) continue;
@@ -423,7 +455,7 @@ class WorkloadDistributionProject {
     List<DistributionRuleViolation> violations,
     Map<WorkloadKey, Set<String>> examsByKey,
   ) {
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
           if (item.examConsults <= 0) continue;
@@ -451,7 +483,7 @@ class WorkloadDistributionProject {
       EmployeeRank.head,
     };
 
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       if (allowed.contains(employee.rank)) continue;
 
       for (final rate in employee.rates) {
@@ -473,7 +505,7 @@ class WorkloadDistributionProject {
   /// DIST-RULE-15: Не більше 8 дипломників-бакалаврів на одного
   /// керівника (3 год. на дипломника у 2 семестрі).
   void _checkRule15(List<DistributionRuleViolation> violations) {
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       double totalQualHoursSem2 = 0;
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
@@ -505,7 +537,7 @@ class WorkloadDistributionProject {
     Map<WorkloadKey, Set<String>> labsByKey,
     Map<WorkloadKey, Set<String>> practicesByKey,
   ) {
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
           if (item.currentConsults <= 0) continue;
@@ -534,7 +566,7 @@ class WorkloadDistributionProject {
   /// DIST-RULE-27: Не більше 30 курсових з однієї дисципліни
   /// на одного НПП (при 3 год./студент — макс. 90 год.).
   void _checkRule27(List<DistributionRuleViolation> violations) {
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       final cwByKey = <WorkloadKey, double>{};
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
@@ -567,7 +599,7 @@ class WorkloadDistributionProject {
   // ── Helpers ────────────────────────────────────────────────────────
 
   UniversityForm1WorkloadItem? _findForm1Item(WorkloadKey key) {
-    for (final item in _universityForm1.workloadItems) {
+    for (final item in universityForm1.workloadItems) {
       if (item.workloadKey == key) return item;
     }
     return null;
@@ -579,7 +611,7 @@ class WorkloadDistributionProject {
     WorkloadField field,
   ) {
     final map = <WorkloadKey, Set<String>>{};
-    for (final employee in _universityForm3.employees) {
+    for (final employee in universityForm3.employees) {
       for (final rate in employee.rates) {
         for (final item in rate.workloadItems) {
           if (item.getFieldValue(field) > 0) {
@@ -718,7 +750,7 @@ class UniversityForm1 {
     return UniversityForm1(
       id: id ?? this.id,
       academicYear: academicYear ?? this.academicYear,
-      workloadItems: workloadItems ?? this.workloadItems,
+      workloadItems: workloadItems != null ? List.unmodifiable(workloadItems) : this.workloadItems,
     );
   }
 
@@ -787,22 +819,6 @@ class UniversityForm3 {
     );
   }
 
-  void addEmployee(Employee newEmployee) {
-    employees.add(newEmployee);
-  }
-
-  void updateEmployeeDetails(String employeeId, String firstName, String lastName, String patronymic, EmployeeRank rank) {
-    final index = employees.indexWhere((e) => e.id == employeeId);
-    if (index != -1) {
-      employees[index] = employees[index].copyWith(
-        firstName: firstName,
-        lastName: lastName,
-        patronymic: patronymic,
-        rank: rank,
-      );
-    }
-  }
-
   UniversityForm3 copyWith({
     String? id,
     int? academicYear,
@@ -811,7 +827,7 @@ class UniversityForm3 {
     return UniversityForm3(
       id: id ?? this.id,
       academicYear: academicYear ?? this.academicYear,
-      employees: employees ?? this.employees,
+      employees: employees != null ? List.unmodifiable(employees) : this.employees,
     );
   }
 
@@ -825,48 +841,61 @@ class UniversityForm3 {
   @override
   int get hashCode => id.hashCode;
 
-  void addRate(String employeeId, EmployeeRate rate) {
-    final employee = employees.firstWhere((e) => e.id == employeeId);
-    employee.addRate(rate);
+  UniversityForm3 addEmployee(Employee newEmployee) {
+    return copyWith(employees: [...employees, newEmployee]);
   }
 
-  void replaceEmployee(Employee oldEmployee, Employee newEmployee) {
-    final index = this.employees.indexOf(oldEmployee);
-    if (index == -1) return;
-    employees[index] = newEmployee;
+  UniversityForm3 updateEmployeeDetails(String employeeId, String firstName, String lastName, String patronymic, EmployeeRank rank) {
+    return copyWith(
+      employees: employees.map((e) => e.id == employeeId ? e.copyWith(
+        firstName: firstName,
+        lastName: lastName,
+        patronymic: patronymic,
+        rank: rank,
+      ) : e).toList(),
+    );
   }
 
-  void removeEmployee(Employee employee) {
-    employees.remove(employee);
+  UniversityForm3 removeEmployee(Employee employee) {
+    return copyWith(
+      employees: employees.where((e) => e.id != employee.id).toList(),
+    );
   }
 
-  void removeRate(String employeeId, EmployeeRate rate) {
-    final employee = employees.firstWhere((e) => e.id == employeeId);
-    employee.removeRate(rate);
+  UniversityForm3 addRate(String employeeId, EmployeeRate rate) {
+    return copyWith(
+      employees: employees.map((e) => e.id == employeeId ? e.addRate(rate) : e).toList(),
+    );
   }
 
-  void updateRate(String employeeId, String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
-    final employee = employees.firstWhere((e) => e.id == employeeId);
-    employee.updateRate(rateId, rateValue, dateStart, dateEnd, postgraduateCount);
+  UniversityForm3 updateRate(String employeeId, String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+    return copyWith(
+      employees: employees.map((e) => e.id == employeeId ? e.updateRateDetails(rateId, rateValue, dateStart, dateEnd, postgraduateCount) : e).toList(),
+    );
   }
 
-  void addWorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem newItem) {
-    final employee = employees.firstWhere((e) => e.id == employeeId);
-    employee.addWorkloadItem(rate, newItem);
+  UniversityForm3 removeRate(String employeeId, EmployeeRate rate) {
+    return copyWith(
+      employees: employees.map((e) => e.id == employeeId ? e.removeRate(rate.id) : e).toList(),
+    );
   }
 
-  void replaceWorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem oldItem, UniversityForm3WorkloadItem newItem) {
-    final employee = employees.firstWhere((e) => e.id == employeeId);
-    final rateIndex = employee.rates.indexOf(rate);
-    if (rateIndex == -1) return;
-    employee.rates[rateIndex].replaceWorkloadItem(oldItem, newItem);
+  UniversityForm3 addWorkloadItem(String employeeId, String rateId, UniversityForm3WorkloadItem newItem) {
+    return copyWith(
+      employees: employees.map((e) => e.id == employeeId ? e.addWorkloadItem(rateId, newItem) : e).toList(),
+    );
   }
 
-  void removeWorkloadItem(String employeeId, EmployeeRate rate, UniversityForm3WorkloadItem item) {
-    final employee = employees.firstWhere((e) => e.id == employeeId);
-    final rateIndex = employee.rates.indexOf(rate);
-    if (rateIndex == -1) return;
-    employee.rates[rateIndex].removeWorkloadItem(item);
+  UniversityForm3 updateWorkloadItem(String employeeId, String rateId, UniversityForm3WorkloadItem newItem) {
+    return copyWith(
+      employees: employees.map((e) => e.id == employeeId ? e.updateWorkloadItem(rateId, newItem) : e).toList(),
+    );
+  }
+
+  UniversityForm3 removeWorkloadItem(String employeeId, String rateId, String itemId) {
+    return copyWith(
+      employees: employees.map((e) => e.id == employeeId ? e.removeWorkloadItem(rateId, itemId) : e).toList(),
+    );
   }
 }
 
@@ -1197,23 +1226,38 @@ class Employee {
   String get fullName =>
       '$firstName $lastName${patronymic.isNotEmpty ? ' $patronymic' : ''}';
 
-  void addWorkloadItem(
-    EmployeeRate rate,
-    UniversityForm3WorkloadItem newItem,
-  ) {
-    final index = rates.indexOf(rate);
-    if (index == -1) return;
-    rates[index].addWorkloadItem(newItem);
+  Employee addRate(EmployeeRate rate) {
+    return copyWith(rates: [...rates, rate]);
   }
 
-  void replaceRate(EmployeeRate oldRate, EmployeeRate newRate) {
-    final index = rates.indexOf(oldRate);
-    if (index == -1) return;
-    rates[index] = newRate;
+  Employee updateRate(EmployeeRate newRate) {
+    return copyWith(
+      rates: rates.map((r) => r.id == newRate.id ? newRate : r).toList(),
+    );
   }
 
-  void removeRate(EmployeeRate rate) {
-    rates.remove(rate);
+  Employee removeRate(String rateId) {
+    return copyWith(
+      rates: rates.where((r) => r.id != rateId).toList(),
+    );
+  }
+
+  Employee addWorkloadItem(String rateId, UniversityForm3WorkloadItem newItem) {
+    return copyWith(
+      rates: rates.map((r) => r.id == rateId ? r.addWorkloadItem(newItem) : r).toList(),
+    );
+  }
+
+  Employee updateWorkloadItem(String rateId, UniversityForm3WorkloadItem newItem) {
+    return copyWith(
+      rates: rates.map((r) => r.id == rateId ? r.updateWorkloadItem(newItem) : r).toList(),
+    );
+  }
+
+  Employee removeWorkloadItem(String rateId, String itemId) {
+    return copyWith(
+      rates: rates.map((r) => r.id == rateId ? r.removeWorkloadItem(itemId) : r).toList(),
+    );
   }
 
   Employee copyWith({
@@ -1230,7 +1274,7 @@ class Employee {
       lastName: lastName ?? this.lastName,
       patronymic: patronymic ?? this.patronymic,
       rank: rank ?? this.rank,
-      rates: rates ?? this.rates,
+      rates: rates != null ? List.unmodifiable(rates) : this.rates,
     );
   }
 
@@ -1242,20 +1286,16 @@ class Employee {
   @override
   int get hashCode => id.hashCode;
 
-  void addRate(EmployeeRate rate) {
-    rates.add(rate);
-  }
-
-  void updateRate(String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
+  Employee updateRateDetails(String rateId, double rateValue, DateTime dateStart, DateTime dateEnd, int postgraduateCount) {
     final index = rates.indexWhere((r) => r.id == rateId);
-    if (index != -1) {
-      rates[index] = rates[index].copyWith(
-        rateValue: rateValue,
-        dateStart: dateStart,
-        dateEnd: dateEnd,
-        postgraduateCount: postgraduateCount,
-      );
-    }
+    if (index == -1) return this;
+    final newRate = rates[index].copyWith(
+      rateValue: rateValue,
+      dateStart: dateStart,
+      dateEnd: dateEnd,
+      postgraduateCount: postgraduateCount,
+    );
+    return updateRate(newRate);
   }
 }
 
@@ -1306,21 +1346,20 @@ class EmployeeRate {
 
   Map<String, dynamic> toJson() => _$EmployeeRateToJson(this);
 
-  void addWorkloadItem(UniversityForm3WorkloadItem newItem) {
-    workloadItems.add(newItem);
+  EmployeeRate addWorkloadItem(UniversityForm3WorkloadItem newItem) {
+    return copyWith(workloadItems: [...workloadItems, newItem]);
   }
 
-  void replaceWorkloadItem(
-    UniversityForm3WorkloadItem oldItem,
-    UniversityForm3WorkloadItem newItem,
-  ) {
-    final index = workloadItems.indexOf(oldItem);
-    if (index == -1) return;
-    workloadItems[index] = newItem;
+  EmployeeRate updateWorkloadItem(UniversityForm3WorkloadItem newItem) {
+    return copyWith(
+      workloadItems: workloadItems.map((i) => i.id == newItem.id ? newItem : i).toList(),
+    );
   }
 
-  void removeWorkloadItem(UniversityForm3WorkloadItem item) {
-    workloadItems.remove(item);
+  EmployeeRate removeWorkloadItem(String itemId) {
+    return copyWith(
+      workloadItems: workloadItems.where((i) => i.id != itemId).toList(),
+    );
   }
 
   EmployeeRate copyWith({
@@ -1337,7 +1376,7 @@ class EmployeeRate {
       dateStart: dateStart ?? this.dateStart,
       dateEnd: dateEnd ?? this.dateEnd,
       postgraduateCount: postgraduateCount ?? this.postgraduateCount,
-      workloadItems: workloadItems ?? this.workloadItems,
+      workloadItems: workloadItems != null ? List.unmodifiable(workloadItems) : this.workloadItems,
     );
   }
 

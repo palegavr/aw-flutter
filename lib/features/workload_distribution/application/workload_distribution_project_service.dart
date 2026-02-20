@@ -70,14 +70,6 @@ class WorkloadDistributionProjectService {
     return count > 0;
   }
 
-  Future<bool> setTitle(int projectId, String newTitle) async {
-    final project = await getById(projectId);
-    if (project == null) return false;
-
-    project.changeTitle(newTitle);
-    return await update(project);
-  }
-
   Future<bool> delete(int id) async {
     final count =
         await (_db.delete(_db.workloadDistributionProject)

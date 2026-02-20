@@ -1,5 +1,8 @@
 import 'package:aw_flutter/app.dart';
+import 'package:aw_flutter/features/workload_distribution/application/workload_distribution_project_service.dart';
 import 'package:aw_flutter/features/workload_distribution/presentation/bloc/import_bloc.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/bloc/workload_distribution_project_bloc.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/bloc/workload_distribution_project_list_bloc.dart';
 import 'package:aw_flutter/src/rust/frb_generated.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +13,19 @@ Future<void> main() async {
   await initAppVersion();
   runApp(
     MultiBlocProvider(
-      providers: [BlocProvider(create: (_) => ImportBloc())],
+      providers: [
+        BlocProvider(create: (_) => ImportBloc()),
+        BlocProvider(
+          create: (_) => WorkloadDistributionProjectListBloc(
+            WorkloadDistributionProjectService(),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => WorkloadDistributionProjectBloc(
+            WorkloadDistributionProjectService(),
+          ),
+        ),
+      ],
       child: const MyApp(),
     ),
   );

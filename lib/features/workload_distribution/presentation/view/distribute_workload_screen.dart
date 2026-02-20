@@ -1,5 +1,4 @@
-import 'package:aw_flutter/features/workload_distribution/application/workload_distribution_project_service.dart';
-import 'package:aw_flutter/shared/errors/domain_error.dart';
+import 'package:aw_flutter/features/workload_distribution/presentation/bloc/workload_distribution_project_bloc.dart';
 import 'package:aw_flutter/features/workload_distribution/domain/models/academic_semester.dart';
 
 import 'package:aw_flutter/features/workload_distribution/domain/models/workload_project.dart';
@@ -11,6 +10,7 @@ import 'package:aw_flutter/shared/date_time_extension.dart';
 import 'package:aw_flutter/src/rust/api/excel_interface.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DistributeWorkloadScreen extends StatefulWidget {
   static const routeName = '/workload_distribution/distribute_workload';
@@ -26,11 +26,7 @@ class DistributeWorkloadScreen extends StatefulWidget {
 
 class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
   final ScrollController _horizontalController = ScrollController();
-  final _workloadDistributionProjectService =
-      WorkloadDistributionProjectService();
 
-  late WorkloadDistributionProject _project;
-  bool _projectLoaded = false;
   DisplayMode _displayMode = DisplayMode.form1;
 
   bool _projectTitleEditing = false;
@@ -42,13 +38,10 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
     null,
   );
 
-  _DistributeWorkloadScreenState() {
-    _postConstruct();
-  }
-
   @override
   void initState() {
     super.initState();
+    context.read<WorkloadDistributionProjectBloc>().add(LoadProject(widget.projectId));
     _editProjectTitleFieldFocusNode.addListener(_onTitleFocusChange);
   }
 
@@ -69,55 +62,37 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
     }
   }
 
-  void _postConstruct() async {
-    await Future.delayed(const Duration(milliseconds: 1));
-    await _refreshProject();
-  }
-
-  Future<void> _refreshProject() async {
-    final WorkloadDistributionProject project =
-        (await _workloadDistributionProjectService.getById(widget.projectId))!;
-    setState(() {
-      _project = project;
-      if (!_projectLoaded) _projectLoaded = true;
-    });
-  }
-
   void _setDisplayMode(DisplayMode newDisplayMode) {
     setState(() {
       _displayMode = newDisplayMode;
     });
   }
 
-  void _setProjectTitleEditing(bool newProjectTitleEditing) {
+  void _setProjectTitleEditing(bool newProjectTitleEditing, String currentTitle) {
     setState(() {
       if (newProjectTitleEditing) {
-        _editProjectTitleFieldTextEditingController.text = _project.title;
+        _editProjectTitleFieldTextEditingController.text = currentTitle;
         _editProjectTitleFieldFocusNode.requestFocus();
       }
       _projectTitleEditing = newProjectTitleEditing;
     });
   }
 
-  void _toggleProjectTitleEditing() {
-    _setProjectTitleEditing(!_projectTitleEditing);
+  void _toggleProjectTitleEditing(String currentTitle) {
+    _setProjectTitleEditing(!_projectTitleEditing, currentTitle);
   }
 
 
-  void _setProjectTitle(String newTitle) async {
-    await _workloadDistributionProjectService.setTitle(
-      widget.projectId,
-      newTitle,
-    );
-    await _refreshProject();
+  void _setProjectTitle(String newTitle) {
+    context.read<WorkloadDistributionProjectBloc>().add(UpdateProjectTitle(newTitle));
   }
 
   void _submitEditProjectTitleField(String value) {
     _setProjectTitle(value);
-    _setProjectTitleEditing(false);
+    _setProjectTitleEditing(false, value);
   }
 
-  Future<void> _importExcel() async {
+  Future<void> _importExcel(WorkloadDistributionProject project) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls'],
@@ -177,21 +152,17 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
                                 : () async {
                                   final newForm1 =
                                       UniversityForm1.fromParsedExcelFile(
-                                        id: _project.universityForm1.id,
+                                        id: project.universityForm1.id,
                                         file: parsedFile,
                                         sheetName: selectedSheet!,
                                         academicYear:
-                                            _project
+                                            project
                                                 .universityForm1
                                                 .academicYear,
                                       );
 
-                                  _project.updateForm1(newForm1);
-                                  await _workloadDistributionProjectService
-                                      .update(_project);
-                                  await _refreshProject();
-
                                   if (context.mounted) {
+                                    context.read<WorkloadDistributionProjectBloc>().add(ImportExcel(newForm1));
                                     Navigator.of(context).pop();
                                   }
                                 },
@@ -250,286 +221,293 @@ class _DistributeWorkloadScreenState extends State<DistributeWorkloadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          ValueListenableBuilder<String?>(
-            valueListenable: _workloadHintNotifier,
-            builder: (context, hint, _) {
-              if (hint == null) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+    return BlocBuilder<WorkloadDistributionProjectBloc, WorkloadDistributionProjectState>(
+      builder: (context, state) {
+        if (state is ProjectLoading || state is ProjectInitial) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (state is ProjectLoadError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Помилка')),
+            body: Center(child: Text(state.message)),
+          );
+        }
+
+        if (state is ProjectReady) {
+          final project = state.project;
+          final errorMessage = state.errorMessage;
+          return Scaffold(
+            appBar: AppBar(
+              actions: [
+                ValueListenableBuilder<String?>(
+                  valueListenable: _workloadHintNotifier,
+                  builder: (context, hint, _) {
+                    if (hint == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            hint,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      hint,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-        ],
-        title: Row(
-          children: [
-            Expanded(
-              child:
-                  _projectTitleEditing
-                      ? TextField(
-                        controller: _editProjectTitleFieldTextEditingController,
-                        focusNode: _editProjectTitleFieldFocusNode,
-                        onSubmitted: _submitEditProjectTitleField,
-                      )
-                      : Text(_projectLoaded ? _project.title : ''),
+              ],
+              title: Row(
+                children: [
+                  Expanded(
+                    child:
+                        _projectTitleEditing
+                            ? TextField(
+                              controller: _editProjectTitleFieldTextEditingController,
+                              focusNode: _editProjectTitleFieldFocusNode,
+                              onSubmitted: _submitEditProjectTitleField,
+                            )
+                            : Text(project.title),
+                  ),
+                  IconButton(
+                    onPressed:
+                        _projectTitleEditing
+                            ? () {
+                              _submitEditProjectTitleField(
+                                _editProjectTitleFieldTextEditingController.text,
+                              );
+                            }
+                            : () {
+                              _toggleProjectTitleEditing(project.title);
+                            },
+                    icon:
+                        _projectTitleEditing
+                            ? const Icon(Icons.check)
+                            : const Icon(Icons.edit),
+                  ),
+                ],
+              ),
             ),
-            IconButton(
-              onPressed:
-                  _projectTitleEditing
-                      ? () {
-                        _submitEditProjectTitleField(
-                          _editProjectTitleFieldTextEditingController.text,
-                        );
-                      }
-                      : () {
-                        _toggleProjectTitleEditing();
-                      },
-              icon:
-                  _projectTitleEditing
-                      ? const Icon(Icons.check)
-                      : const Icon(Icons.edit),
-            ),
-          ],
-        ),
-      ),
-      body:
-          (!_projectLoaded)
-              ? const Align(
-                alignment: Alignment.center,
-                child: CircularProgressIndicator(),
-              )
-              : Align(
-                alignment: Alignment.topCenter,
-                child: Column(
-                  children: [
-                    Builder(
-                      builder: (context) {
-                        final violations = _project.distributionRuleViolations;
-                        if (violations.isEmpty) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          child: Material(
-                            color: Theme.of(context).colorScheme.errorContainer,
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Column(
+                children: [
+                  Builder(
+                    builder: (context) {
+                      final violations = project.distributionRuleViolations;
+                      if (violations.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: Material(
+                          color: Theme.of(context).colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () => _showViolationsDialog(context, violations),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.warning_amber_rounded,
+                            onTap: () => _showViolationsDialog(context, violations),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Theme.of(context).colorScheme.onErrorContainer,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Помилки розподілу: ${violations.length}',
+                                    style: TextStyle(
                                       color: Theme.of(context).colorScheme.onErrorContainer,
-                                      size: 20,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Помилки розподілу: ${violations.length}',
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onErrorContainer,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.arrow_forward_ios,
-                                      color: Theme.of(context).colorScheme.onErrorContainer,
-                                      size: 14,
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Theme.of(context).colorScheme.onErrorContainer,
+                                    size: 14,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                    ToggleButtons(
-                      isSelected: [
-                        _displayMode == DisplayMode.form1,
-                        _displayMode == DisplayMode.form3,
-                      ],
-                      onPressed: (index) {
-                        _setDisplayMode(
-                          index == 0 ? DisplayMode.form1 : DisplayMode.form3,
-                        );
-                      },
-                      children: [
-                        Text(DisplayMode.form1.name),
-                        Text(DisplayMode.form3.name),
-                      ],
-                    ),
-                    Expanded(
-                      child:
-                          _displayMode == DisplayMode.form1
-                              ? _project.universityForm1.workloadItems.isEmpty
-                                  ? Center(
-                                    child: ElevatedButton.icon(
-                                      onPressed: _importExcel,
-                                      icon: const Icon(Icons.upload_file),
-                                      label: const Text('Імпортувати з Excel'),
-                                    ),
-                                  )
-                                  : _Form1Table(
-                                    universityForm1: _project.universityForm1,
-                                  )
-                              : _displayMode == DisplayMode.form3
-                               ? _Form3Editor(
-                                 project: _project,
-                                 hintNotifier: _workloadHintNotifier,
-                                 onUpdateField: (employeeId, rateId, itemId, field, newValue) async {
-                                   try {
-                                     _project.updateForm3WorkloadField(employeeId, rateId, itemId, field, newValue);
-                                     await _workloadDistributionProjectService.update(_project);
-                                     await _refreshProject();
-                                   } on DomainError catch (e) {
-                                     await _refreshProject();
-                                     if (mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(
-                                         SnackBar(
-                                           content: Text(e.message),
-                                           backgroundColor: Theme.of(context).colorScheme.error,
-                                         ),
-                                       );
-                                     }
-                                   } catch (e) {
-                                     await _refreshProject();
-                                     if (mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(
-                                         SnackBar(
-                                           content: Text('Помилка при оновленні.'),
-                                           backgroundColor: Theme.of(context).colorScheme.error,
-                                         ),
-                                       );
-                                     }
-                                   }
-                                 },
-                                 onUpdateGroups: (employeeId, rateId, itemId, groups) async {
-                                   _project.updateForm3WorkloadGroups(employeeId, rateId, itemId, groups);
-                                   await _workloadDistributionProjectService.update(_project);
-                                   await _refreshProject();
-                                 },
-                                 onDeleteItem: (employeeId, rateId, itemId) async {
-                                   _project.removeForm3WorkloadItem(employeeId, rateId, itemId);
-                                   await _workloadDistributionProjectService.update(_project);
-                                   await _refreshProject();
-                                 },
-                                 onAddItem: (employeeId, rateId, item) async {
-                                   try {
-                                     _project.addForm3WorkloadItem(employeeId, rateId, item);
-                                     await _workloadDistributionProjectService.update(_project);
-                                     await _refreshProject();
-                                   } on DomainError catch (e) {
-                                     await _refreshProject();
-                                     if (mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(
-                                         SnackBar(
-                                           content: Text(e.message),
-                                           backgroundColor: Theme.of(context).colorScheme.error,
-                                         ),
-                                       );
-                                     }
-                                     rethrow;
-                                   } catch (e) {
-                                     await _refreshProject();
-                                     if (mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(
-                                         SnackBar(
-                                           content: Text('Помилка при додаванні: $e'),
-                                           backgroundColor: Theme.of(context).colorScheme.error,
-                                         ),
-                                       );
-                                     }
-                                     rethrow;
-                                   }
-                                 },
-                                 onCreateRate: (employeeId, rateValue, dateStart, dateEnd, postgraduateCount) async {
-                                   _project.createForm3Rate(employeeId, rateValue, dateStart, dateEnd, postgraduateCount);
-                                   await _workloadDistributionProjectService.update(_project);
-                                   await _refreshProject();
-                                 },
-                                 onUpdateRate: (employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount) async {
-                                   _project.updateForm3Rate(employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount);
-                                   await _workloadDistributionProjectService.update(_project);
-                                   await _refreshProject();
-                                 },
-                                 onRemoveRate: (employee, rate) async {
-                                   _project.removeForm3Rate(employee.id, rate);
-                                   await _workloadDistributionProjectService.update(_project);
-                                   await _refreshProject();
-                                 },
-                                   onAddEmployee: (data) async {
-                                    final employee = Employee.create(
-                                      firstName: data.firstName,
-                                      lastName: data.lastName,
-                                      patronymic: data.patronymic,
-                                      rank: data.rank,
-                                      rates: [
-                                        if (data.rateData != null) 
-                                          EmployeeRate.create(
-                                            rateValue: data.rateData!.rateValue,
-                                            dateStart: data.rateData!.dateStart,
-                                            dateEnd: data.rateData!.dateEnd,
-                                            postgraduateCount: data.rateData!.postgraduateCount,
-                                          ),
-                                      ],
-                                    );
-                                    _project.addForm3Employee(employee);
-                                    await _workloadDistributionProjectService.update(_project);
-                                    await _refreshProject();
-                                  },
-                                 onRemoveEmployee: (employee) async {
-                                   _project.removeForm3Employee(employee);
-                                   await _workloadDistributionProjectService.update(_project);
-                                   await _refreshProject();
-                                 },
-                                 onUpdateEmployee: (employeeId, data) async {
-                                   _project.updateEmployeeDetails(
-                                     employeeId,
-                                     data.firstName,
-                                     data.lastName,
-                                     data.patronymic,
-                                     data.rank,
-                                   );
-                                   await _workloadDistributionProjectService.update(_project);
-                                   await _refreshProject();
-                                 },
-                               )
-                              : const Text('Unimplemented :('),
-                    ),
-                  ],
-                ),
+                        ),
+                      );
+                    },
+                  ),
+                  ToggleButtons(
+                    isSelected: [
+                      _displayMode == DisplayMode.form1,
+                      _displayMode == DisplayMode.form3,
+                    ],
+                    onPressed: (index) {
+                      _setDisplayMode(
+                        index == 0 ? DisplayMode.form1 : DisplayMode.form3,
+                      );
+                    },
+                    children: [
+                      Text(DisplayMode.form1.name),
+                      Text(DisplayMode.form3.name),
+                    ],
+                  ),
+                  Expanded(
+                    child:
+                        _displayMode == DisplayMode.form1
+                            ? project.universityForm1.workloadItems.isEmpty
+                                ? Center(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _importExcel(project),
+                                    icon: const Icon(Icons.upload_file),
+                                    label: const Text('Імпортувати з Excel'),
+                                  ),
+                                )
+                                : _Form1Table(
+                                  universityForm1: project.universityForm1,
+                                )
+                            : _displayMode == DisplayMode.form3
+                             ? _Form3Editor(
+                               project: project,
+                               hintNotifier: _workloadHintNotifier,
+                               onUpdateField: (employeeId, rateId, itemId, field, newValue) async {
+                                 context.read<WorkloadDistributionProjectBloc>().add(UpdateWorkloadField(
+                                   employeeId: employeeId,
+                                   rateId: rateId,
+                                   itemId: itemId,
+                                   field: field,
+                                   newValue: newValue,
+                                 ));
+                               },
+                               onUpdateGroups: (employeeId, rateId, itemId, groups) {
+                                 context.read<WorkloadDistributionProjectBloc>().add(UpdateWorkloadGroups(
+                                   employeeId: employeeId,
+                                   rateId: rateId,
+                                   itemId: itemId,
+                                   groups: groups,
+                                 ));
+                               },
+                               onDeleteItem: (employeeId, rateId, itemId) {
+                                 context.read<WorkloadDistributionProjectBloc>().add(RemoveWorkloadItem(
+                                   employeeId: employeeId,
+                                   rateId: rateId,
+                                   itemId: itemId,
+                                 ));
+                               },
+                               onAddItem: (employeeId, rateId, item) async {
+                                 context.read<WorkloadDistributionProjectBloc>().add(AddWorkloadItem(
+                                   employeeId: employeeId,
+                                   rateId: rateId,
+                                   newItem: item,
+                                 ));
+                               },
+                               onCreateRate: (employeeId, rateValue, dateStart, dateEnd, postgraduateCount) {
+                                 context.read<WorkloadDistributionProjectBloc>().add(CreateRate(
+                                   employeeId: employeeId,
+                                   rateValue: rateValue,
+                                   dateStart: dateStart,
+                                   dateEnd: dateEnd,
+                                   postgraduateCount: postgraduateCount,
+                                 ));
+                               },
+                               onUpdateRate: (employeeId, rateId, rateValue, dateStart, dateEnd, postgraduateCount) {
+                                 context.read<WorkloadDistributionProjectBloc>().add(UpdateRate(
+                                   employeeId: employeeId,
+                                   rateId: rateId,
+                                   rateValue: rateValue,
+                                   dateStart: dateStart,
+                                   dateEnd: dateEnd,
+                                   postgraduateCount: postgraduateCount,
+                                 ));
+                               },
+                               onRemoveRate: (employee, rate) {
+                                 context.read<WorkloadDistributionProjectBloc>().add(RemoveRate(
+                                   employeeId: employee.id,
+                                   rate: rate,
+                                 ));
+                               },
+                               onAddEmployee: (data) {
+                                 final employee = Employee.create(
+                                   firstName: data.firstName,
+                                   lastName: data.lastName,
+                                   patronymic: data.patronymic,
+                                   rank: data.rank,
+                                   rates: [
+                                     if (data.rateData != null) 
+                                       EmployeeRate.create(
+                                         rateValue: data.rateData!.rateValue,
+                                         dateStart: data.rateData!.dateStart,
+                                         dateEnd: data.rateData!.dateEnd,
+                                         postgraduateCount: data.rateData!.postgraduateCount,
+                                       ),
+                                   ],
+                                 );
+                                 context.read<WorkloadDistributionProjectBloc>().add(AddEmployee(employee));
+                               },
+                               onRemoveEmployee: (employee) {
+                                 context.read<WorkloadDistributionProjectBloc>().add(RemoveEmployee(employee));
+                               },
+                               onUpdateEmployee: (employeeId, data) {
+                                 context.read<WorkloadDistributionProjectBloc>().add(UpdateEmployeeDetails(
+                                   employeeId: employeeId,
+                                   firstName: data.firstName,
+                                   lastName: data.lastName,
+                                   patronymic: data.patronymic,
+                                   rank: data.rank,
+                                 ));
+                               },
+                             )
+                            : const Text('Unimplemented :('),
+                  ),
+                ],
               ),
+            ),
+            bottomNavigationBar: errorMessage != null ? Container(
+              color: Theme.of(context).colorScheme.errorContainer,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      errorMessage,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      context.read<WorkloadDistributionProjectBloc>().add(ClearProjectError());
+                    },
+                    icon: Icon(Icons.close, color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+              ),
+            ) : null,
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }
