@@ -13,7 +13,7 @@ class InitialScreen extends StatelessWidget {
   @override
   Widget build(BuildContext ctx) {
     final items = [
-      _MenuItem(
+      /*_MenuItem(
         title: 'Імпорт',
         onTap: () => Navigator.pushNamed(ctx, ImportScreen.routeName),
       ),
@@ -21,7 +21,7 @@ class InitialScreen extends StatelessWidget {
       _MenuItem(
         title: 'Переглянути архів',
         onTap: () => Navigator.pushNamed(ctx, ArchiveEntriesScreen.routeName),
-      ),
+      ),*/
       _MenuItem(
         title: 'Проекти',
         onTap: () => Navigator.pushNamed(ctx, DistributeWorkloadProjectsScreen.routeName),
